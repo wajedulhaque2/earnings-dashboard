@@ -2,5 +2,5 @@ package assets
 
 import "embed"
 
-//go:embed templates/*.html static/*.css
+//go:embed templates/*.html static/*
 var Files embed.FS

@@ -21,6 +21,12 @@ migrate-status:
 	go run ./cmd/migrate status
 worker:
 	go run ./cmd/worker
+
+schedule:
+	go run ./cmd/worker schedule
+
+integration:
+	go test -tags integration ./internal/repository -v
 check:
 	gofmt -w .
 	go vet ./...

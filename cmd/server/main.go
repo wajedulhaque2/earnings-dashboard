@@ -13,6 +13,7 @@ import (
 	"earnings-dashboard/internal/config"
 	"earnings-dashboard/internal/database"
 	"earnings-dashboard/internal/repository"
+	"earnings-dashboard/internal/service"
 	"earnings-dashboard/internal/web"
 )
 
@@ -36,12 +37,14 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 	defer pool.Close()
+	store := repository.New(pool)
+	app := &web.App{Store: store, Search: service.New(store, cfg.SECUserAgent, logger), Location: cfg.MarketLocation, Timeout: cfg.DatabaseTimeout}
 	server := &http.Server{
 		Addr:              cfg.Address(),
-		Handler:           web.NewRouter(repository.New(pool), cfg.DatabaseTimeout, logger),
+		Handler:           web.NewRouter(store, cfg.DatabaseTimeout, logger, app),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      cfg.DatabaseTimeout + 10*time.Second,
+		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 	failures := make(chan error, 1)

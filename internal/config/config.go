@@ -16,6 +16,7 @@ type Config struct {
 	DatabaseTimeout time.Duration
 	ShutdownTimeout time.Duration
 	MarketLocation  *time.Location
+	SECUserAgent    string
 }
 
 func Load() (Config, error) { return load(os.LookupEnv) }
@@ -28,6 +29,7 @@ func load(lookup func(string) (string, bool)) (Config, error) {
 		return fallback
 	}
 	c := Config{Environment: get("APP_ENV", "development"), Port: get("PORT", "8080"), DatabaseURL: get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/earnings_dashboard?sslmode=disable")}
+	c.SECUserAgent = get("SEC_USER_AGENT", "")
 	if c.Environment != "development" && c.Environment != "test" && c.Environment != "production" {
 		return Config{}, fmt.Errorf("APP_ENV must be development, test, or production")
 	}

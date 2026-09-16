@@ -21,6 +21,7 @@ services:
       APP_ENV: development
       PORT: "8080"
       DATABASE_URL: postgres://postgres:postgres@db:5432/earnings_dashboard?sslmode=disable
+      SEC_USER_AGENT: ${SEC_USER_AGENT:-}
     depends_on:
       db:
         condition: service_healthy
@@ -39,8 +40,8 @@ services:
       retries: 3
   worker:
     build: .
-    profiles: ["tools"]
-    command: ["/app/worker"]
+    command: ["/app/worker", "schedule"]
+    restart: unless-stopped
     environment: *app_environment
     depends_on:
       migrate:

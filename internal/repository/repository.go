@@ -22,6 +22,6 @@ func New(db DB) *Store { return &Store{db: db} }
 func (s *Store) Ready(ctx context.Context) error {
 	_, err := s.db.Exec(ctx, `SELECT 1 FROM companies, earnings_events,
  quarterly_financials, earnings_reactions, watchlists,
- watchlist_companies, provider_sync_state LIMIT 0`)
+ watchlist_companies, provider_sync_state, historical_prices, intraday_snapshots, filings, sync_requests LIMIT 0`)
 	return err
 }
