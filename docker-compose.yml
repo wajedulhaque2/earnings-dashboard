@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: earnings_dashboard
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d earnings_dashboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: .
+    command: ["/app/migrate", "up"]
+    environment: &app_environment
+      APP_ENV: development
+      PORT: "8080"
+      DATABASE_URL: postgres://postgres:postgres@db:5432/earnings_dashboard?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    build: .
+    environment: *app_environment
+    ports:
+      - "127.0.0.1:${PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 6s
+      retries: 3
+  worker:
+    build: .
+    profiles: ["tools"]
+    command: ["/app/worker"]
+    environment: *app_environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+volumes:
+  postgres_data:
