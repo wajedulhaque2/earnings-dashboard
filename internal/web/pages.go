@@ -133,7 +133,7 @@ func (a *App) register(r chi.Router) {
 		if t == nil {
 			return "N/A"
 		}
-		return t.In(a.Location).Format("Jan 02 15:04 MST")
+		return t.In(a.Location).Format("Jan 02, 2006 15:04:05 MST")
 	}}).ParseFS(assets.Files, "templates/*.html"))
 	r.Get("/calendar", a.calendar)
 	r.Get("/stocks/{symbol}", a.stock)

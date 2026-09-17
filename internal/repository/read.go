@@ -212,7 +212,7 @@ func (s *Store) SetWatchlist(ctx context.Context, symbol string, add bool) error
 	return err
 }
 func (s *Store) SyncStates(ctx context.Context) ([]models.SyncState, error) {
-	rows, err := s.db.Query(ctx, `SELECT provider,resource,status,last_sync,error FROM provider_sync_state ORDER BY last_sync DESC NULLS FIRST LIMIT 30`)
+	rows, err := s.db.Query(ctx, `SELECT provider,split_part(resource,':',1),split_part(resource,':',2),latest_attempt_at,latest_attempt_status,last_success_at,latest_error_category FROM provider_sync_state ORDER BY latest_attempt_at DESC NULLS LAST,provider,resource LIMIT 500`)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (s *Store) SyncStates(ctx context.Context) ([]models.SyncState, error) {
 	out := []models.SyncState{}
 	for rows.Next() {
 		var v models.SyncState
-		if err = rows.Scan(&v.Provider, &v.Resource, &v.Status, &v.LastSync, &v.Error); err != nil {
+		if err = rows.Scan(&v.Provider, &v.Operation, &v.Symbol, &v.LatestAttemptAt, &v.LatestAttemptStatus, &v.LastSuccessAt, &v.LatestErrorCategory); err != nil {
 			return nil, err
 		}
 		out = append(out, v)

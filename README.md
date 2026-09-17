@@ -156,6 +156,10 @@ No optional Massive or Alpha Vantage adapter is implemented; no paid fallback is
 
 ## Deployment readiness
 
-The Docker packaging, migrations, non-root image, graceful shutdown, health checks and persistent scheduler support a private single-user installation. Docker execution was not verified in the implementation environment because Docker was unavailable. Go binaries, actual PostgreSQL migrations/queries and Yahoo ingestion were tested locally; SEC was tested with fixtures only.
+The Docker packaging, migrations, non-root image, graceful shutdown, health checks and persistent scheduler support a private single-user installation. Docker builds, the local Compose application, PostgreSQL migrations/queries, Yahoo ingestion and SEC ingestion have now been verified locally. See the SEC status audit for the latest scope and results.
 
 V1 has no authentication and should remain private. Before internet-facing deployment, add authentication at a trusted reverse proxy, HTTPS, appropriate database credentials/TLS, backups and restore testing, monitoring and resource limits. Do not expose the development database or default credentials. Yahoo is unofficial and may change or deny access. Review exchange holiday rules annually and account for exceptional closures. This is a research application, not an execution system or point-in-time backtesting dataset.
+
+## Provider status audit
+
+See [SEC eligibility and status audit](docs/SEC_STATUS_AUDIT.md) for migration 00005, live SEC verification, status meanings and upgrade commands. Unsupported SEC symbols do not count as refresh failures. Last successful refresh is retained separately from the latest attempt.

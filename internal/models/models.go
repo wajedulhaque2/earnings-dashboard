@@ -87,7 +87,9 @@ type History struct {
 	Reaction Reaction
 }
 type SyncState struct {
-	Provider, Resource, Status string
-	LastSync                   *time.Time
-	Error                      *string
+	Provider, Operation, Symbol string
+	LatestAttemptAt             *time.Time
+	LatestAttemptStatus         string
+	LatestErrorCategory         *string
+	LastSuccessAt               *time.Time
 }

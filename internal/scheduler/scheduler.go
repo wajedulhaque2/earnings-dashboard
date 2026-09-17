@@ -18,7 +18,7 @@ type Store interface {
 	DueSymbols(context.Context) ([]string, error)
 	IntradaySymbols(context.Context) ([]string, error)
 	CalendarDue(context.Context) (bool, error)
-	RecordSync(context.Context, string, string, string) error
+	RecordSync(context.Context, string, string, string, ...string) error
 }
 type Syncer interface {
 	SyncAll(context.Context, string) error

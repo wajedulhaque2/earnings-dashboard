@@ -23,7 +23,7 @@ func (s *Store) Ready(ctx context.Context) error {
 	_, err := s.db.Exec(ctx, `SELECT companies.quote_time, companies.timezone,
  earnings_events.period_end, quarterly_financials.revenue_source,
  quarterly_financials.eps_source, earnings_reactions.event_date,
- historical_prices.split_ratio, provider_sync_state.attempted_at FROM companies, earnings_events,
+ historical_prices.split_ratio, provider_sync_state.latest_attempt_at FROM companies, earnings_events,
  quarterly_financials, earnings_reactions, watchlists,
  watchlist_companies, provider_sync_state, historical_prices, intraday_snapshots, filings, sync_requests LIMIT 0`)
 	return err

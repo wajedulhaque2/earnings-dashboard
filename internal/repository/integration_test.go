@@ -130,12 +130,35 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 	if err = s.RecordSync(ctx, "yahoo", "company:TEST", "success"); err != nil {
 		t.Fatal(err)
 	}
+	before, err := s.SyncStates(ctx)
+	if err != nil || len(before) != 1 || before[0].LastSuccessAt == nil {
+		t.Fatal("missing initial success", err)
+	}
+	lastSuccess := *before[0].LastSuccessAt
 	if err = s.RecordSync(ctx, "yahoo", "company:TEST", "error"); err != nil {
 		t.Fatal(err)
 	}
 	states, err := s.SyncStates(ctx)
-	if err != nil || len(states) != 1 || states[0].LastSync == nil || states[0].Status != "error" {
+	if err != nil || len(states) != 1 || states[0].LastSuccessAt == nil || states[0].LatestAttemptStatus != "error" {
 		t.Fatal(states, err)
+	}
+	if !states[0].LastSuccessAt.Equal(lastSuccess) || states[0].LatestAttemptAt == nil || states[0].LatestAttemptAt.Before(lastSuccess) || states[0].Operation != "company" || states[0].Symbol != "TEST" {
+		t.Fatal("attempt overwrote success or lost identity", states)
+	}
+	for _, status := range []string{"unsupported", "not_attempted", "success"} {
+		if err = s.RecordSync(ctx, "yahoo", "company:TEST", status); err != nil {
+			t.Fatal(err)
+		}
+		states, err = s.SyncStates(ctx)
+		if err != nil || states[0].LatestAttemptStatus != status || states[0].LatestErrorCategory != nil {
+			t.Fatal(states, err)
+		}
+		if status != "success" && !states[0].LastSuccessAt.Equal(lastSuccess) {
+			t.Fatal("lost last success")
+		}
+		if status == "not_attempted" && states[0].LatestAttemptAt != nil {
+			t.Fatal("invented attempt timestamp")
+		}
 	}
 	reaction := models.Reaction{EventID: events[0].ID, Methodology: "test"}
 	reaction.Returns[1] = models.Ptr(0.0)

@@ -10,6 +10,13 @@ import (
 var ErrUnavailable = errors.New("provider data unavailable")
 var ErrNotFound = errors.New("symbol not found")
 var ErrMalformed = errors.New("invalid provider response")
+var ErrUnsupported = errors.New("provider does not support symbol")
+var ErrNotConfigured = errors.New("provider not configured")
+
+// Eligibility distinguishes unsupported instruments from temporary provider failures.
+type Eligibility interface {
+	Eligible(context.Context, string) error
+}
 
 type Reference interface {
 	Name() string

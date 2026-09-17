@@ -4,6 +4,7 @@ import (
 	"context"
 	"earnings-dashboard/internal/models"
 	"earnings-dashboard/internal/providers"
+	"earnings-dashboard/internal/providers/httpclient"
 	"errors"
 	"log/slog"
 	"time"
@@ -17,7 +18,7 @@ type Store interface {
 	UpsertPrice(context.Context, models.Price) error
 	UpsertSnapshot(context.Context, models.Snapshot) error
 	UpsertFiling(context.Context, models.Filing) error
-	RecordSync(context.Context, string, string, string) error
+	RecordSync(context.Context, string, string, string, ...string) error
 }
 type Sync struct {
 	Store        Store
@@ -34,13 +35,54 @@ func (s *Sync) operation(ctx context.Context, provider, operation, symbol string
 	err := fn()
 	status := "success"
 	category := ""
-	if err != nil {
-		status = "error"
-		category = "refresh_failed"
+	if errors.Is(err, providers.ErrUnsupported) {
+		status = "unsupported"
+	} else if errors.Is(err, providers.ErrNotConfigured) {
+		status, category = "not_attempted", "not_configured"
+	} else if err != nil {
+		status, category = "error", errorCategory(err)
 	}
-	stateErr := s.Store.RecordSync(ctx, provider, operation+":"+symbol, status)
+	stateErr := s.Store.RecordSync(ctx, provider, operation+":"+symbol, status, category)
 	s.Logger.Info("provider refresh", "provider", provider, "operation", operation, "symbol", symbol, "duration", time.Since(start), "status", status, "error", category)
-	return errors.Join(err, stateErr)
+	if stateErr != nil {
+		return stateErr
+	}
+	return err
+}
+
+func errorCategory(err error) string {
+	var status *httpclient.StatusError
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "cancelled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "timeout"
+	case errors.Is(err, providers.ErrMalformed):
+		return "invalid_response"
+	case errors.Is(err, providers.ErrNotFound):
+		return "not_found"
+	case errors.Is(err, providers.ErrUnavailable):
+		return "data_unavailable"
+	case errors.As(err, &status):
+		switch status.Code {
+		case 401, 403:
+			return "access_denied"
+		case 404:
+			return "not_found"
+		case 429:
+			return "rate_limited"
+		default:
+			return "provider_http_error"
+		}
+	default:
+		return "refresh_failed"
+	}
+}
+func eligible(ctx context.Context, provider any, symbol string) error {
+	if p, ok := provider.(providers.Eligibility); ok {
+		return p.Eligible(ctx, symbol)
+	}
+	return nil
 }
 func (s *Sync) SyncCompany(ctx context.Context, symbol string) error {
 	symbol, err := models.Symbol(symbol)
@@ -50,6 +92,9 @@ func (s *Sync) SyncCompany(ctx context.Context, symbol string) error {
 	var failures []error
 	for _, p := range s.References {
 		err = s.operation(ctx, p.Name(), "company", symbol, func() error {
+			if e := eligible(ctx, p, symbol); e != nil {
+				return e
+			}
 			v, e := p.Company(ctx, symbol)
 			if e != nil {
 				return e
@@ -117,6 +162,9 @@ func (s *Sync) SyncFinancials(ctx context.Context, symbol string) error {
 	var failures []error
 	for _, p := range s.Fundamentals {
 		err = s.operation(ctx, p.Name(), "financials", c.Symbol, func() error {
+			if e := eligible(ctx, p, c.Symbol); e != nil {
+				return e
+			}
 			rows, e := p.Financials(ctx, c.Symbol)
 			if e != nil {
 				return e
@@ -134,12 +182,15 @@ func (s *Sync) SyncFinancials(ctx context.Context, symbol string) error {
 		})
 		if err == nil {
 			success = true
-		} else {
+		} else if !errors.Is(err, providers.ErrUnsupported) {
 			failures = append(failures, err)
 		}
 	}
 	if s.Filings != nil {
 		_ = s.operation(ctx, "sec", "filings", c.Symbol, func() error {
+			if e := eligible(ctx, s.Filings, c.Symbol); e != nil {
+				return e
+			}
 			rows, e := s.Filings.Filings(ctx, c.Symbol)
 			if e != nil {
 				return e

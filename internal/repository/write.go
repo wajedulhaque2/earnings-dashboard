@@ -67,12 +67,20 @@ func (s *Store) UpsertFiling(ctx context.Context, f models.Filing) error {
 	_, err := s.db.Exec(ctx, `INSERT INTO filings(company_id,accession,form,filed,report_date,document) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(company_id,accession) DO UPDATE SET form=EXCLUDED.form,filed=EXCLUDED.filed,report_date=COALESCE(EXCLUDED.report_date,filings.report_date),document=EXCLUDED.document`, f.CompanyID, f.Accession, f.Form, f.Filed, report, f.Document)
 	return err
 }
-func (s *Store) RecordSync(ctx context.Context, provider, resource, status string) error {
+func (s *Store) RecordSync(ctx context.Context, provider, resource, status string, categories ...string) error {
 	var reason *string
 	if status == "error" {
 		reason = models.Text("refresh_failed")
 	}
-	_, err := s.db.Exec(ctx, `INSERT INTO provider_sync_state(provider,resource,last_sync,status,error) VALUES($1,$2,CASE WHEN $3='success' THEN now() END,$3,$4) ON CONFLICT(provider,resource) DO UPDATE SET last_sync=COALESCE(EXCLUDED.last_sync,provider_sync_state.last_sync),status=EXCLUDED.status,error=EXCLUDED.error,attempted_at=now()`, provider, resource, status, reason)
+	if len(categories) > 0 {
+		reason = models.Text(categories[0])
+	}
+	_, err := s.db.Exec(ctx, `INSERT INTO provider_sync_state(provider,resource,last_success_at,latest_attempt_status,latest_error_category,latest_attempt_at)
+ VALUES($1,$2,CASE WHEN $3='success' THEN clock_timestamp() END,$3,$4,CASE WHEN $3<>'not_attempted' THEN clock_timestamp() END)
+ ON CONFLICT(provider,resource) DO UPDATE SET
+ last_success_at=COALESCE(EXCLUDED.last_success_at,provider_sync_state.last_success_at),
+ latest_attempt_status=EXCLUDED.latest_attempt_status,latest_error_category=EXCLUDED.latest_error_category,
+ latest_attempt_at=EXCLUDED.latest_attempt_at`, provider, resource, status, reason)
 	return err
 }
 func (s *Store) UpsertReaction(ctx context.Context, r models.Reaction) error {

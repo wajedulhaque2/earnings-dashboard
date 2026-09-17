@@ -28,7 +28,7 @@ func (m *memoryStore) UpsertCompany(_ context.Context, c models.Company) (models
 	m.rows[c.Symbol] = c
 	return c, nil
 }
-func (m *memoryStore) RecordSync(_ context.Context, p, r, status string) error {
+func (m *memoryStore) RecordSync(_ context.Context, p, r, status string, categories ...string) error {
 	m.statuses = append(m.statuses, status)
 	return nil
 }

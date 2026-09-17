@@ -37,7 +37,7 @@ func (c *Client) mapping(ctx context.Context) (map[string]ticker, error) {
 		return c.tickers, nil
 	}
 	if !strings.Contains(c.HTTP.UserAgent, "@") || strings.Contains(c.HTTP.UserAgent, "example.com") {
-		return nil, providers.ErrUnavailable
+		return nil, providers.ErrNotConfigured
 	}
 	var raw map[string]ticker
 	if err := c.HTTP.JSON(ctx, "GET", c.WWWBase+"/files/company_tickers.json", nil, &raw); err != nil {
@@ -45,8 +45,9 @@ func (c *Client) mapping(ctx context.Context) (map[string]ticker, error) {
 	}
 	mapped := map[string]ticker{}
 	for _, v := range raw {
-		if v.Ticker != "" && v.CIK > 0 {
-			mapped[strings.ToUpper(v.Ticker)] = v
+		if symbol, err := models.Symbol(v.Ticker); err == nil && v.CIK > 0 && v.CIK <= 9999999999 {
+			v.Ticker = symbol
+			mapped[symbol] = v
 		}
 	}
 	if len(mapped) == 0 {
@@ -70,9 +71,22 @@ func (c *Client) resolve(ctx context.Context, symbol string) (ticker, error) {
 		v, ok = m[strings.ReplaceAll(symbol, ".", "-")]
 	}
 	if !ok {
-		return ticker{}, providers.ErrNotFound
+		return ticker{}, providers.ErrUnsupported
 	}
 	return v, nil
+}
+
+// ResolveCIK uses the official mapping, never a guessed CIK or exchange heuristic.
+func (c *Client) ResolveCIK(ctx context.Context, symbol string) (string, error) {
+	v, err := c.resolve(ctx, symbol)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%010d", v.CIK), nil
+}
+func (c *Client) Eligible(ctx context.Context, symbol string) error {
+	_, err := c.ResolveCIK(ctx, symbol)
+	return err
 }
 func (c *Client) Search(ctx context.Context, q string) ([]models.Company, error) {
 	m, err := c.mapping(ctx)
@@ -114,6 +128,10 @@ func (c *Client) submission(ctx context.Context, symbol string) (ticker, submiss
 	return v, s, err
 }
 func (c *Client) Company(ctx context.Context, symbol string) (models.Company, error) {
+	symbol, err := models.Symbol(symbol)
+	if err != nil {
+		return models.Company{}, err
+	}
 	v, s, err := c.submission(ctx, symbol)
 	if err != nil {
 		return models.Company{}, err

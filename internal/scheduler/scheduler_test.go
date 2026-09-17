@@ -25,7 +25,7 @@ func (s *fakeStore) Company(context.Context, string) (models.Company, error) {
 func (s *fakeStore) Events(context.Context, int64) ([]models.Event, error)       { return nil, nil }
 func (s *fakeStore) Prices(context.Context, int64) ([]models.Price, error)       { return nil, nil }
 func (s *fakeStore) Snapshots(context.Context, int64) ([]models.Snapshot, error) { return nil, nil }
-func (s *fakeStore) RecordSync(_ context.Context, provider, resource, status string) error {
+func (s *fakeStore) RecordSync(_ context.Context, provider, resource, status string, categories ...string) error {
 	s.attempts = append(s.attempts, status)
 	return nil
 }

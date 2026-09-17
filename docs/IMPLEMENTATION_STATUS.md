@@ -1,5 +1,7 @@
 # Implementation and verification status
 
+Update: the later [SEC/status audit](SEC_STATUS_AUDIT.md) verified Docker build/application restart and live SEC ingestion for LEN, NVDA, META, MU and AAPL. The initial verification limitations below describe the earlier implementation checkpoint.
+
 ## Delivered scope
 
 Phase 1 was preserved and extended through provider/ingestion, calendar/company UI, reaction/analytics, watchlist/scheduling and final verification checkpoints. Backend, providers, workers, analytics, persistence and server rendering are Go. Browser JavaScript is limited to local ECharts rendering. Plain CSS and html/template avoid a frontend build dependency.
