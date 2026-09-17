@@ -55,6 +55,17 @@ func TestCalendarKeepsZeroAndUnknownSession(t *testing.T) {
 		t.Fatalf("%+v", e)
 	}
 }
+
+func TestTimestampSuppliedSession(t *testing.T) {
+	c := fixture(t, `{"finance":{"result":[{"documents":[{"columns":[{"id":"ticker"},{"id":"startdatetime"},{"id":"startdatetimetype"},{"id":"eventname"}],"rows":[["TEST","2026-08-26T20:20:00.000Z","TAS","Q2 2027 Earnings Announcement"],["TEST","2026-02-25T13:00:00.000Z","TAS",null]]}]}]}}`)
+	rows, err := c.Calendar(context.Background(), time.Now(), time.Now())
+	if err != nil || len(rows) != 2 {
+		t.Fatal(err)
+	}
+	if rows[0].Event.Session != "AMC" || rows[1].Event.Session != "BMO" || rows[0].Event.ReportTime == nil || *rows[0].Event.FiscalQuarter != 2 || *rows[0].Event.FiscalYear != 2027 {
+		t.Fatal(rows)
+	}
+}
 func Test404DoesNotRetry(t *testing.T) {
 	calls := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls++; http.Error(w, "unavailable", 404) }))

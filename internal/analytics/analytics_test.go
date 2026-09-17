@@ -73,3 +73,36 @@ func TestConditionsAndGapBoundaries(t *testing.T) {
 		}
 	}
 }
+
+func TestGroupCountsAndContinuation(t *testing.T) {
+	rows := []models.History{
+		{Event: models.Event{EPSSurprisePct: models.Ptr(.1), RevenueSurprisePct: models.Ptr(.1)}, Reaction: models.Reaction{Returns: [8]*float64{models.Ptr(-.1), models.Ptr(-.19), nil, nil, models.Ptr(.2)}}},
+		{Event: models.Event{EPSSurprisePct: models.Ptr(.1), RevenueSurprisePct: models.Ptr(.1)}},
+		{},
+	}
+	condition := Groups(rows, false)[0]
+	if condition.Events != 2 || condition.Event.N != 1 || condition.Week.N != 1 || condition.Month.N != 0 || *condition.Event.WinRate != 0 {
+		t.Fatalf("independent non-null sample counts: %+v", condition)
+	}
+	gap := Groups(rows, true)[4]
+	if gap.Events != 1 || gap.Continuation.N != 1 || math.Abs(*gap.Continuation.Average-.1) > 1e-9 || *gap.Continuation.WinRate != 1 {
+		t.Fatalf("negative gap continued downward: %+v", gap)
+	}
+}
+
+func TestCurrentSessionAndLaterSplit(t *testing.T) {
+	d := date("2026-03-09")
+	loc, _ := time.LoadLocation("America/New_York")
+	e := models.Event{ReportDate: d, Session: "BMO"}
+	prices := []models.Price{{Date: date("2026-03-06"), Close: models.Ptr(100.0)}, {Date: d, Close: models.Ptr(110.0)}}
+	snapshots := []models.Snapshot{{Time: time.Date(2026, 3, 9, 9, 29, 0, 0, loc), Session: "PRE", Price: 105}}
+	r := Calculate(e, prices, snapshots, time.Date(2026, 3, 9, 17, 0, 0, 0, loc))
+	if r.Returns[1] != nil || r.Returns[0] == nil {
+		t.Fatal("current daily bar must not be treated as final")
+	}
+	prices = append(prices, models.Price{Date: date("2026-03-10"), SplitRatio: models.Ptr(2.0)})
+	r = Calculate(e, prices, snapshots, date("2026-03-15"))
+	if r.Returns[0] != nil || r.Returns[1] == nil {
+		t.Fatal("later split must exclude incompatible raw premarket observation")
+	}
+}

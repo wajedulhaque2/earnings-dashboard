@@ -4,6 +4,7 @@ package scheduler
 
 import (
 	"context"
+	"earnings-dashboard/internal/earnings"
 	"earnings-dashboard/internal/service"
 	"errors"
 	"log/slog"
@@ -77,7 +78,7 @@ func (s *Scheduler) Cycle(ctx context.Context) error {
 	}
 	// Fetch after the premarket window so the 09:29 minute bar has completed.
 	now := time.Now().In(s.Location)
-	if now.Hour() >= 9 && now.Hour() <= 20 {
+	if earnings.IsSession(now) && now.Hour()*60+now.Minute() >= 570 && now.Hour() <= 20 {
 		symbols, e := s.Store.IntradaySymbols(ctx)
 		if e != nil {
 			failures = append(failures, e)

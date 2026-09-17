@@ -1,4 +1,4 @@
-.PHONY: dev test build fmt lint vet migrate migrate-down migrate-status worker check
+.PHONY: dev test build fmt lint vet migrate migrate-down migrate-status worker schedule integration check
 
 dev:
 	go run ./cmd/server

@@ -30,3 +30,16 @@ func TestHolidays(t *testing.T) {
 		t.Fatal("NYSE Saturday New Year must not close Friday")
 	}
 }
+
+func TestSessionTimestampDSTAndEarlyClose(t *testing.T) {
+	loc, _ := time.LoadLocation("America/New_York")
+	for _, tc := range []struct {
+		month             time.Month
+		day, hour, minute int
+		want              string
+	}{{3, 9, 9, 29, "BMO"}, {3, 9, 9, 30, "DURING_MARKET"}, {3, 9, 16, 0, "AMC"}, {11, 27, 13, 0, "AMC"}, {12, 24, 12, 59, "DURING_MARKET"}} {
+		if got := SessionAt(time.Date(2026, tc.month, tc.day, tc.hour, tc.minute, 0, 0, loc)); got != tc.want {
+			t.Fatal(tc, got)
+		}
+	}
+}

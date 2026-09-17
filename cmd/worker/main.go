@@ -39,7 +39,10 @@ func run(logger *slog.Logger) bool {
 		return false
 	}
 	defer pool.Close()
-	if err := repository.New(pool).Ready(ctx); err != nil {
+	readyCtx, readyCancel := context.WithTimeout(ctx, cfg.DatabaseTimeout)
+	readyErr := repository.New(pool).Ready(readyCtx)
+	readyCancel()
+	if readyErr != nil {
 		logger.Error("database unavailable or migrations missing")
 		return false
 	}

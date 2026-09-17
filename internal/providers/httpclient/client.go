@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -60,7 +61,7 @@ func (c *Client) Do(ctx context.Context, method, url string, body []byte) ([]byt
 			return nil, errors.New("invalid provider request")
 		}
 		req.Header.Set("User-Agent", c.UserAgent)
-		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Accept", "*/*")
 		if body != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
@@ -68,6 +69,13 @@ func (c *Client) Do(ctx context.Context, method, url string, body []byte) ([]byt
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
+			}
+			var networkError net.Error
+			if attempt < 2 && errors.As(err, &networkError) && networkError.Timeout() {
+				if err := wait(ctx, time.Duration(1<<attempt)*time.Second); err != nil {
+					return nil, err
+				}
+				continue
 			}
 			return nil, errors.New("provider transport failure")
 		}

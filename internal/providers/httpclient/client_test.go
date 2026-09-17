@@ -30,6 +30,22 @@ func TestTransientRetry(t *testing.T) {
 		})
 	}
 }
+
+func TestPlainTextAuthenticationResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Accept") == "application/json" {
+			w.WriteHeader(http.StatusNotAcceptable)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("fixture-token"))
+	}))
+	defer srv.Close()
+	body, err := New("test", 0).Do(context.Background(), "GET", srv.URL, nil)
+	if err != nil || string(body) != "fixture-token" {
+		t.Fatalf("plain-text endpoint rejected: %v", err)
+	}
+}
 func TestRetryDeadlineAndSafeErrors(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(503) }))
 	defer srv.Close()

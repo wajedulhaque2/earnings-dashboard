@@ -8,12 +8,14 @@ import (
 	"math"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"earnings-dashboard/internal/earnings"
 	"earnings-dashboard/internal/models"
 	"earnings-dashboard/internal/providers"
 	"earnings-dashboard/internal/providers/httpclient"
@@ -190,7 +192,7 @@ func (c *Client) chart(ctx context.Context, symbol, params string) (chartResult,
 		return chartResult{}, providers.ErrNotFound
 	}
 	v := r.Chart.Result[0]
-	if v.Meta.Symbol != "" && v.Meta.Symbol != symbol {
+	if v.Meta.Symbol != symbol {
 		return chartResult{}, providers.ErrMalformed
 	}
 	return v, nil
@@ -283,7 +285,7 @@ func (c *Client) calendar(ctx context.Context, from, to time.Time, symbol string
 	}
 	out := []models.CalendarItem{}
 	for offset := 0; offset < 10000; offset += 100 {
-		body := map[string]any{"entityIdType": "sp_earnings", "sortType": "ASC", "sortField": "startdatetime", "includeFields": []string{"ticker", "companyshortname", "intradaymarketcap", "startdatetime", "startdatetimetype", "epsestimate", "epsactual", "epssurprisepct"}, "size": 100, "offset": offset, "query": query}
+		body := map[string]any{"entityIdType": "sp_earnings", "sortType": "ASC", "sortField": "startdatetime", "includeFields": []string{"ticker", "companyshortname", "intradaymarketcap", "eventname", "startdatetime", "startdatetimetype", "epsestimate", "epsactual", "epssurprisepct"}, "size": 100, "offset": offset, "query": query}
 		var r struct {
 			Finance struct {
 				Error  any
@@ -337,6 +339,7 @@ func (c *Client) calendar(ctx context.Context, from, to time.Time, symbol string
 			if e != nil {
 				return nil, providers.ErrMalformed
 			}
+			stamp := date
 			// The calendar date is the provider's report date; do not turn midnight UTC into yesterday.
 			date = time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 			session := "UNKNOWN"
@@ -349,6 +352,20 @@ func (c *Client) calendar(ctx context.Context, from, to time.Time, symbol string
 				session = "DURING_MARKET"
 			}
 			event := models.Event{Symbol: sym, ReportDate: date, Session: session, Source: c.Name(), EPSEstimate: rawNumber(pick("epsestimate", "EPS Estimate")), EPSActual: rawNumber(pick("epsactual", "Reported EPS")), EPSSurprisePct: rawNumber(pick("epssurprisepct", "Surprise (%)"))}
+			// TAS records supply an event timestamp. TNS/unknown codes and midnight
+			// date placeholders do not establish a release session.
+			if rawText(pick("startdatetimetype", "Timing")) == "TAS" && strings.Contains(rawDate, "T") && (stamp.Hour() != 0 || stamp.Minute() != 0 || stamp.Second() != 0) {
+				loc, _ := time.LoadLocation("America/New_York")
+				event.ReportTime = &stamp
+				event.ReportDate = earnings.Date(stamp.In(loc))
+				event.Session = earnings.SessionAt(stamp)
+			}
+			if parts := quarterLabel.FindStringSubmatch(rawText(pick("eventname", "Event Name"))); len(parts) == 3 {
+				q, _ := strconv.Atoi(parts[1])
+				y, _ := strconv.Atoi(parts[2])
+				event.FiscalQuarter = &q
+				event.FiscalYear = &y
+			}
 			out = append(out, models.CalendarItem{Company: models.Company{Symbol: sym, Name: models.Text(rawText(pick("companyshortname", "Company Name"))), MarketCap: rawNumber(pick("intradaymarketcap", "Market Cap (Intraday)"))}, Event: event})
 		}
 		if len(doc.Rows) < 100 {
@@ -357,6 +374,9 @@ func (c *Client) calendar(ctx context.Context, from, to time.Time, symbol string
 	}
 	return nil, errors.New("calendar exceeds pagination limit; narrow date window")
 }
+
+var quarterLabel = regexp.MustCompile(`^Q([1-4]) ([0-9]{4}) Earnings`)
+
 func rawText(v json.RawMessage) string { var s string; _ = json.Unmarshal(v, &s); return s }
 func rawNumber(v json.RawMessage) *float64 {
 	var n *float64

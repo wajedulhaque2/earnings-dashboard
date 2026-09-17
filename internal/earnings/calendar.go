@@ -9,6 +9,29 @@ import (
 func Date(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
+
+// SessionAt classifies an explicitly supplied event timestamp in New York.
+// Early closes are trading sessions with a 13:00 close, not holidays.
+func SessionAt(t time.Time) string {
+	loc, _ := time.LoadLocation("America/New_York")
+	d := t.In(loc)
+	if !IsSession(d) {
+		return "UNKNOWN"
+	}
+	minutes := d.Hour()*60 + d.Minute()
+	closeMinutes := 16 * 60
+	if d.Month() == time.November && Date(d).Equal(nth(d.Year(), time.November, time.Thursday, 4).AddDate(0, 0, 1)) ||
+		d.Month() == time.December && d.Day() == 24 || d.Month() == time.July && d.Day() == 3 {
+		closeMinutes = 13 * 60
+	}
+	if minutes < 9*60+30 {
+		return "BMO"
+	}
+	if minutes >= closeMinutes {
+		return "AMC"
+	}
+	return "DURING_MARKET"
+}
 func nth(y int, m time.Month, w time.Weekday, n int) time.Time {
 	d := time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)
 	return d.AddDate(0, 0, (int(w)-int(d.Weekday())+7)%7+7*(n-1))
