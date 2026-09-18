@@ -35,7 +35,20 @@ func New() *Client {
 }
 func (c *Client) Name() string { return "yahoo" }
 func (c *Client) request(ctx context.Context, method, path string, body, out any) error {
-	err := c.HTTP.JSON(ctx, method, c.Base+path, body, out)
+	c.mu.Lock()
+	crumb := c.crumb
+	c.mu.Unlock()
+	withCrumb := func(value string) string {
+		if value == "" {
+			return c.Base + path
+		}
+		sep := "?"
+		if strings.Contains(path, "?") {
+			sep = "&"
+		}
+		return c.Base + path + sep + "crumb=" + url.QueryEscape(value)
+	}
+	err := c.HTTP.JSON(ctx, method, withCrumb(crumb), body, out)
 	var status *httpclient.StatusError
 	if !errors.As(err, &status) || status.Code != 401 {
 		return err
@@ -44,11 +57,11 @@ func (c *Client) request(ctx context.Context, method, path string, body, out any
 	defer c.mu.Unlock()
 	// Refresh only in response to authentication failure; cookies remain in memory.
 	_, _ = c.HTTP.Do(ctx, "GET", c.CookieURL, nil)
-	crumb, e := c.HTTP.Do(ctx, "GET", c.AuthBase+"/v1/test/getcrumb", nil)
+	fresh, e := c.HTTP.Do(ctx, "GET", c.AuthBase+"/v1/test/getcrumb", nil)
 	if e != nil {
 		return providers.ErrUnavailable
 	}
-	c.crumb = strings.TrimSpace(string(crumb))
+	c.crumb = strings.TrimSpace(string(fresh))
 	if c.crumb == "" || len(c.crumb) > 128 || strings.ContainsAny(c.crumb, "<>\n") {
 		return providers.ErrUnavailable
 	}

@@ -8,7 +8,7 @@ Yahoo supplies search/profile data, earnings dates, EPS estimates/actuals/surpri
 
 SEC extraction accepts directly reported USD revenue and diluted EPS observations with 75–105 day periods. It excludes annual and year-to-date totals rather than subtracting them to manufacture quarters. It chooses the latest filed observation for the same period and prioritizes recognized consolidated revenue tags. Company-specific tags, unusual short/long quarters, IFRS facts and unsupported currencies may be absent. Restated facts may replace earlier values; this is not a historical point-in-time dataset. Period-end dates are retained, while fiscal labels stay NULL unless explicitly supplied. Do not interpret SEC filing fiscal-year metadata as the fiscal year of every comparative fact.
 
-Yahoo quarterly charts show up to twelve available observations, possibly fewer. Fiscal labels from explicit earnings event names are retained. Historical revenue estimates and forward quarterly estimates are not reliably sourced by the current adapters, so revenue-surprise/conditional tables may have zero samples and forward chart estimates are omitted. No past premarket price is reconstructed from daily OHLC. Logos are optional stored fields and render only when supplied; no logo service or inferred URL is called.
+Yahoo quarterly charts show up to twelve available observations, possibly fewer. Fiscal labels from explicit earnings event names are retained. Historical revenue estimates and forward quarterly estimates are not reliably sourced by the current adapters, so revenue-surprise fields may be N/A; EPS-only conditions remain usable and forward chart estimates are omitted. No past premarket price is reconstructed from daily OHLC. Logos are optional stored fields and render only when supplied; no logo service or inferred URL is called.
 
 ## Session assignment
 
@@ -27,7 +27,7 @@ All stored returns are fractions: 0.052 displays as 5.2%. Provider surprise perc
 
 The engine looks up the exact expected trading date. It never compresses a missing price bar into the next available date. Missing, non-finite or non-positive price inputs yield NULL. Daily closes use the Yahoo close series (split-adjusted, without dividend total-return adjustment); adjusted close is stored separately and is not silently substituted. Results are price returns, not dividend-inclusive total returns. Current-day daily bars are withheld until the next New York date, conservatively avoiding incomplete sessions and early-close assumptions.
 
-- Premarket return = selected premarket price / previous session close − 1.
+- Opening Gap = daily event-session open / previous regular session close − 1.
 - Event-day return = event close / previous session close − 1.
 - Forward return = target session close / event close − 1.
 
@@ -35,15 +35,15 @@ Forward horizons are 1D=1, 2D=2, 1W=5, 2W=10, 1M=21 and 3M=63 trading sessions a
 
 Premarket selects the latest available stored PRE observation from 09:25 through 09:29 New York time on the event session, preferring Yahoo on an equal timestamp. Only completed minute bars are ingested. This is an observation close to the open, not a guaranteed executable price. If a later stock split makes an old unadjusted snapshot incompatible with the refreshed split-adjusted historical close, the premarket return is withheld. No synthetic split-adjusted intraday reconstruction is made.
 
-Methodology identifier: `us-sessions-v1-fractional-close`. Stored event dates and calculation timestamps support inspection and repeatable recalculation.
+Methodology identifier: `us-sessions-v2-daily-opening-gap`. Stored event dates and calculation timestamps support inspection and repeatable recalculation.
 
 ## Statistics
 
-Every horizon has its own sample set. NULL and non-finite values are excluded from sample counts, arithmetic means, medians, extrema, win rates and standard deviation. A win means return > 0; zero is a valid observation but not a win. Median is the middle sorted value or the average of the two middle values. Standard deviation uses the sample denominator n−1 and is NULL below two observations. Empty sets show N/A, with n=0.
+Every horizon has its own sample set. NULL and non-finite values are excluded from sample counts, arithmetic means, medians, extrema, win rates and standard deviation. A win means return > 0; zero is a valid observation but not a win. Median is the middle sorted value or the average of the two middle values. Standard deviation uses the sample denominator n−1 and is NULL below two observations. Individual missing statistics show N/A; analytical grids with no usable observations are hidden.
 
-Earnings conditions require both nonzero EPS and revenue surprise percentages. Positive is a beat; negative is a miss. In-line (zero) and missing results are excluded rather than assigned a fabricated direction. Group Events counts qualifying events; each return statistic separately excludes missing horizons.
+EPS Surprise Behaviour requires only nonzero EPS surprise percentages. Large beats exceed +10 percentage points; large misses are below −10, and also belong to the broad groups. Positive is a beat; negative is a miss. In-line (zero) and missing results are excluded rather than assigned a fabricated direction. Group Events counts qualifying events; each return statistic separately excludes missing horizons.
 
-Gap buckets use the observed premarket return g:
+Gap buckets use the daily Opening Gap g:
 
 | Bucket | Interval |
 | --- | --- |
@@ -53,8 +53,19 @@ Gap buckets use the observed premarket return g:
 | −5% to −2% | −0.05 ≤ g ≤ −0.02 |
 | Below −5% | g < −0.05 |
 
-Continuation = sign(g) × ((1 + event-day return) / (1 + g) − 1). Positive means movement from the observed premarket price to the close continued in the initial gap direction. A zero initial gap has no direction and is excluded from continuation statistics, while remaining eligible for its bucket's forward-return statistics. Gap win rate is the fraction of valid continuation observations above zero. Weekly/monthly averages still use ordinary signed forward returns.
+Opening Gap Behaviour shows event-day average and win rate, plus ordinary 1W/1M forward averages. Intraday snapshots are optional archived observations and are not read by core reaction recalculation.
 
 ## Interpretation limits
 
 Sources can revise earnings dates, estimates, actuals and prices. Records are keyed by company/report date; a changed date without a reliable common source identifier can leave an older scheduled record. Review suspect duplicates on `/status` and against the source; do not silently merge different reports. Upcoming dates are not guaranteed announcements. Suspensions/delistings and missing bars remain missing. Historical samples are descriptive, not proof of predictive performance or a complete survivorship-free universe.
+
+## Fiscal metadata
+
+SEC FY/FP are accepted only when the fact end matches the same accession's official submission report date. Comparative facts do not inherit the later filing's fiscal year. Earnings labels can additionally use a unique quarter linked to a 10-Q/10-K filed on the exact earnings report date. No nearest-date or calendar-month inference is used; unmatched labels remain NULL.
+
+
+## Duplicate source period dates
+
+Raw quarterly records are retained. The canonical presentation/coverage view suppresses a Yahoo period only when a SEC period for the same company and currency is within seven days in the same calendar month and both non-null revenue and diluted EPS exactly agree. It displays the directly reported SEC record, without synthesizing values. Nonmatching or incomplete pairs stay separate. This can lower observation counts without reducing company coverage.
+
+If SEC contexts disagree on a label or reuse it for distinct reported ends, the label is withheld; numeric observations remain intact. Fiscal year/quarter is not a storage identity. Labels from explicit Yahoo event names are preserved separately from same-day SEC associations, so later validation can clear ambiguous SEC-derived labels without erasing explicit event labels. Even source-supplied labels can contain provider inconsistencies; they are not reconstructed from calendar dates.

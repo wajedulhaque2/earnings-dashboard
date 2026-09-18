@@ -26,6 +26,11 @@ func Text(s string) *string {
 }
 
 type Company struct {
+	FiscalYearEnd                                                                            *string
+	SecurityType, ExchangeCode                                                               *string
+	UniverseEligible                                                                         bool
+	UniverseReason                                                                           string
+	UniverseCheckedAt                                                                        *time.Time
 	ID                                                                                       int64
 	Symbol                                                                                   string
 	Name, Exchange, Country, Sector, Industry, Description, LogoURL, Currency, Timezone, CIK *string
@@ -76,9 +81,10 @@ type CalendarItem struct {
 	Event   Event
 }
 type Reaction struct {
+	PremarketReturn                                      *float64
 	EventID                                              int64
 	PreviousClose, PremarketPrice, EventOpen, EventClose *float64
-	Returns                                              [8]*float64 // premarket, event, 1D, 2D, 1W, 2W, 1M, 3M (fractional)
+	Returns                                              [8]*float64 // opening gap, event, 1D, 2D, 1W, 2W, 1M, 3M (fractional)
 	EventDate                                            *time.Time
 	Methodology                                          string
 }

@@ -6,6 +6,7 @@ import (
 	"earnings-dashboard/internal/providers"
 	"earnings-dashboard/internal/providers/httpclient"
 	"errors"
+	"github.com/jackc/pgx/v5"
 	"log/slog"
 	"time"
 )
@@ -165,6 +166,15 @@ func (s *Sync) SyncFinancials(ctx context.Context, symbol string) error {
 			if e := eligible(ctx, p, c.Symbol); e != nil {
 				return e
 			}
+			if p.Name() == "sec" {
+				if reference, ok := p.(providers.Reference); ok {
+					if metadata, e := reference.Company(ctx, c.Symbol); e == nil {
+						if _, e = s.Store.UpsertCompany(ctx, models.Company{Symbol: c.Symbol, CIK: metadata.CIK, FiscalYearEnd: metadata.FiscalYearEnd}); e != nil {
+							return e
+						}
+					}
+				}
+			}
 			rows, e := p.Financials(ctx, c.Symbol)
 			if e != nil {
 				return e
@@ -205,6 +215,11 @@ func (s *Sync) SyncFinancials(ctx context.Context, symbol string) error {
 		})
 	}
 	if success {
+		if labels, ok := s.Store.(interface {
+			LinkFiscalLabels(context.Context, int64) error
+		}); ok {
+			return labels.LinkFiscalLabels(ctx, c.ID)
+		}
 		return nil
 	}
 	return errors.Join(failures...)
@@ -276,6 +291,13 @@ func (s *Sync) SyncUpcomingCalendar(ctx context.Context, from, to time.Time) err
 			return err
 		}
 		for _, v := range rows {
+			existing, e := s.Store.Company(ctx, v.Company.Symbol)
+			if e != nil && !errors.Is(e, pgx.ErrNoRows) {
+				return e
+			}
+			if e != nil || !existing.UniverseEligible {
+				continue
+			}
 			c, e := s.Store.UpsertCompany(ctx, v.Company)
 			if e != nil {
 				return e
@@ -285,12 +307,15 @@ func (s *Sync) SyncUpcomingCalendar(ctx context.Context, from, to time.Time) err
 				return e
 			}
 		}
+		if q, ok := s.Store.(interface{ QueueCalendar(context.Context) error }); ok {
+			return q.QueueCalendar(ctx)
+		}
 		return nil
 	})
 }
 func (s *Sync) SyncAll(ctx context.Context, symbol string) error {
 	var errs []error
-	for _, fn := range []func(context.Context, string) error{s.SyncCompany, s.SyncFinancials, s.SyncEarnings, s.SyncHistoricalPrices, s.SyncRecentIntraday} {
+	for _, fn := range []func(context.Context, string) error{s.SyncCompany, s.SyncEarnings, s.SyncHistoricalPrices, s.recalculate, s.SyncFinancials} {
 		if err := fn(ctx, symbol); err != nil {
 			errs = append(errs, err)
 		}
@@ -299,4 +324,11 @@ func (s *Sync) SyncAll(ctx context.Context, symbol string) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func (s *Sync) recalculate(ctx context.Context, symbol string) error {
+	if store, ok := s.Store.(ReactionStore); ok {
+		return Recalculate(ctx, store, symbol, time.Now())
+	}
+	return nil
 }

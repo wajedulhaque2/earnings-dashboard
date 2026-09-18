@@ -247,3 +247,7 @@ Use these only as test/seed examples, never as a hardcoded universe:
 ## Before making architectural changes
 
 Read this file and `docs/PRODUCT_SPEC.md` first. Preserve the zero-cost data constraint unless the user explicitly changes it.
+
+## Current production strategy (September 2026)
+
+Use the attribute-based tracked universe described in docs/UNIVERSE.md for the default calendar and scheduled ingestion. Arbitrary-symbol search remains supported with outside-universe labeling. Opening Gap from daily OHLC is the core historical metric; intraday observations are optional. EPS-only surprise conditions must work without revenue consensus. Current/next earnings companies have highest refresh priority. Maintain and rerun the frozen representative coverage audit for broad ingestion changes.

@@ -30,7 +30,7 @@ type PageStore interface {
 	Watchlist(context.Context) ([]models.Company, error)
 	SetWatchlist(context.Context, string, bool) error
 	Queue(context.Context, string) error
-	SyncStates(context.Context) ([]models.SyncState, error)
+	SyncStates(context.Context, ...string) ([]models.SyncState, error)
 }
 type Searcher interface {
 	Search(context.Context, string) ([]models.Company, error)
@@ -47,6 +47,8 @@ type day struct {
 	BMO, AMC, Other []models.CalendarItem
 }
 type page struct {
+	HasSummary                                                                        bool
+	StatusFilter                                                                      string
 	WatchRows                                                                         []watchRow
 	Summary                                                                           [8]analytics.Stats
 	Conditions, Gaps                                                                  []analytics.Group
@@ -255,8 +257,13 @@ func (a *App) stock(w http.ResponseWriter, r *http.Request) {
 	}
 	chart := map[string]any{"financials": financials, "history": p.History}
 	p.Summary = analytics.Summary(p.History)
-	p.Conditions = analytics.Groups(p.History, false)
-	p.Gaps = analytics.Groups(p.History, true)
+	for _, stat := range p.Summary {
+		if stat.N > 0 {
+			p.HasSummary = true
+		}
+	}
+	p.Conditions = analytics.Behaviour(p.History, false)
+	p.Gaps = analytics.Behaviour(p.History, true)
 	encoded, _ := json.Marshal(chart)
 	p.Chart = string(encoded)
 	a.render(w, 200, "stock", p)
@@ -327,12 +334,12 @@ func (a *App) watchlist(w http.ResponseWriter, r *http.Request) {
 func (a *App) status(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), a.Timeout)
 	defer cancel()
-	rows, err := a.Store.SyncStates(ctx)
+	rows, err := a.Store.SyncStates(ctx, r.URL.Query().Get("filter"))
 	if err != nil {
 		a.fail(w, 503, "Database unavailable.")
 		return
 	}
-	a.render(w, 200, "status", page{Title: "Data refresh status", States: rows})
+	a.render(w, 200, "status", page{Title: "Data refresh status", States: rows, StatusFilter: r.URL.Query().Get("filter")})
 }
 func (a *App) watch(w http.ResponseWriter, r *http.Request) {
 	if !sameOrigin(r) {

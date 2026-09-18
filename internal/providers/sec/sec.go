@@ -111,6 +111,7 @@ func (c *Client) Search(ctx context.Context, q string) ([]models.Company, error)
 }
 
 type submission struct {
+	FiscalYearEnd      string
 	Name               string
 	Tickers, Exchanges []string
 	Filings            struct {
@@ -136,7 +137,7 @@ func (c *Client) Company(ctx context.Context, symbol string) (models.Company, er
 	if err != nil {
 		return models.Company{}, err
 	}
-	company := models.Company{Symbol: symbol, Name: models.Text(s.Name), CIK: models.Text(fmt.Sprintf("%010d", v.CIK))}
+	company := models.Company{Symbol: symbol, Name: models.Text(s.Name), CIK: models.Text(fmt.Sprintf("%010d", v.CIK)), FiscalYearEnd: models.Text(s.FiscalYearEnd)}
 	for i, t := range s.Tickers {
 		if t == symbol && i < len(s.Exchanges) {
 			company.Exchange = models.Text(s.Exchanges[i])
@@ -166,6 +167,8 @@ func (c *Client) Filings(ctx context.Context, symbol string) ([]models.Filing, e
 }
 
 type fact struct {
+	Accn, FP                       string
+	FY                             int
 	Start, End, Filed, Form, Frame string
 	Val                            *float64
 }
@@ -182,7 +185,14 @@ func (c *Client) Financials(ctx context.Context, symbol string) ([]models.Financ
 	if err = c.HTTP.JSON(ctx, "GET", fmt.Sprintf("%s/api/xbrl/companyfacts/CIK%010d.json", c.DataBase, v.CIK), nil, &facts); err != nil {
 		return nil, err
 	}
-	return extract(facts), nil
+	rows := extract(facts)
+	// FY/FP identify the filing's fiscal period, not every comparative fact in
+	// that filing. Only label a fact when its end matches that accession's report date.
+	_, submission, subErr := c.submission(ctx, symbol)
+	if subErr == nil {
+		labelPeriods(rows, facts, submission)
+	}
+	return rows, nil
 }
 func extract(r factsResponse) []models.Financial {
 	out := map[string]models.Financial{}

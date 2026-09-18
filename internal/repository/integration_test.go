@@ -123,6 +123,9 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 	if err != nil || len(watch) != 1 {
 		t.Fatal(watch, err)
 	}
+	if _, err = s.db.Exec(ctx, "UPDATE companies SET universe_eligible=true WHERE symbol='TEST'"); err != nil {
+		t.Fatal(err)
+	}
 	calendar, err := s.Calendar(ctx, CalendarFilter{From: d, To: d.AddDate(0, 0, 1), Watchlist: true})
 	if err != nil || len(calendar) != 1 {
 		t.Fatal(calendar, err)
@@ -130,7 +133,7 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 	if err = s.RecordSync(ctx, "yahoo", "company:TEST", "success"); err != nil {
 		t.Fatal(err)
 	}
-	before, err := s.SyncStates(ctx)
+	before, err := s.SyncStates(ctx, "all")
 	if err != nil || len(before) != 1 || before[0].LastSuccessAt == nil {
 		t.Fatal("missing initial success", err)
 	}
@@ -138,7 +141,7 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 	if err = s.RecordSync(ctx, "yahoo", "company:TEST", "error"); err != nil {
 		t.Fatal(err)
 	}
-	states, err := s.SyncStates(ctx)
+	states, err := s.SyncStates(ctx, "all")
 	if err != nil || len(states) != 1 || states[0].LastSuccessAt == nil || states[0].LatestAttemptStatus != "error" {
 		t.Fatal(states, err)
 	}
@@ -149,7 +152,7 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 		if err = s.RecordSync(ctx, "yahoo", "company:TEST", status); err != nil {
 			t.Fatal(err)
 		}
-		states, err = s.SyncStates(ctx)
+		states, err = s.SyncStates(ctx, "all")
 		if err != nil || states[0].LatestAttemptStatus != status || states[0].LatestErrorCategory != nil {
 			t.Fatal(states, err)
 		}
@@ -161,6 +164,7 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 		}
 	}
 	reaction := models.Reaction{EventID: events[0].ID, Methodology: "test"}
+	reaction.Returns[0] = models.Ptr(0.05)
 	reaction.Returns[1] = models.Ptr(0.0)
 	for i := 0; i < 2; i++ {
 		if err = s.UpsertReaction(ctx, reaction); err != nil {
@@ -168,7 +172,7 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 		}
 	}
 	rs, err := s.Reactions(ctx, first.ID)
-	if err != nil || rs[events[0].ID].Returns[1] == nil {
+	if err != nil || rs[events[0].ID].Returns[1] == nil || rs[events[0].ID].Returns[0] == nil || *rs[events[0].ID].Returns[0] != .05 {
 		t.Fatal(rs, err)
 	}
 	snapshot := models.Snapshot{CompanyID: first.ID, Time: d.Add(9 * time.Hour), Session: "PRE", Price: 10, Source: "yahoo"}
@@ -190,6 +194,79 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 	}
 	if err = s.FinishRequest(ctx, "TEST", true); err != nil {
 		t.Fatal(err)
+	}
+	// Universe publication, default calendar filtering and automatic queueing
+	// are verified against PostgreSQL rather than mocked SQL strings.
+	outside, err := s.UpsertCompany(ctx, models.Company{Symbol: "OUTSIDE", Name: models.Text("Outside fixture")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.UpsertEvent(ctx, models.Event{CompanyID: outside.ID, ReportDate: d, Session: "BMO", Source: "yahoo"}); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.ApplyUniverse(ctx, []models.Company{{Symbol: "TEST", UniverseEligible: true, UniverseReason: "eligible"}, {Symbol: "OUTSIDE", UniverseReason: "outside_supported_exchanges"}}); err != nil {
+		t.Fatal(err)
+	}
+	merged, err := s.UpsertCompany(ctx, models.Company{Symbol: "TEST", Description: models.Text("Updated profile")})
+	if err != nil || !merged.UniverseEligible {
+		t.Fatal("profile refresh lost universe membership", err)
+	}
+	calendar, err = s.Calendar(ctx, CalendarFilter{From: d, To: d.AddDate(0, 0, 1)})
+	if err != nil || len(calendar) != 1 || calendar[0].Company.Symbol != "TEST" {
+		t.Fatal("outside company leaked into calendar", calendar, err)
+	}
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	if err = s.UpsertEvent(ctx, models.Event{CompanyID: first.ID, ReportDate: today, Session: "AMC", Source: "yahoo"}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if err = s.QueueCalendar(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	requests, err = s.Requests(ctx)
+	if err != nil || len(requests) != 1 || requests[0] != "TEST" {
+		t.Fatal("calendar was not queued idempotently", requests, err)
+	}
+	if err = s.RecordSync(ctx, "sec", "financials:OUTSIDE", "unsupported"); err != nil {
+		t.Fatal(err)
+	}
+	filtered, err := s.SyncStates(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, state := range filtered {
+		if state.LatestAttemptStatus == "unsupported" {
+			t.Fatal("unsupported dominated overview")
+		}
+	}
+	filtered, err = s.SyncStates(ctx, "unsupported")
+	if err != nil || len(filtered) != 1 {
+		t.Fatal(filtered, err)
+	}
+	if err = s.ApplyUniverse(ctx, nil); err == nil {
+		t.Fatal("empty snapshot accepted")
+	}
+	merged, err = s.Company(ctx, "TEST")
+	if err != nil || !merged.UniverseEligible {
+		t.Fatal("empty screen erased universe")
+	}
+	quarterEnd := time.Date(2025, 6, 28, 0, 0, 0, 0, time.UTC)
+	for _, f := range []models.Financial{
+		{CompanyID: first.ID, PeriodEnd: quarterEnd, Source: "sec", Currency: "USD", Revenue: models.Ptr(150.0), DilutedEPS: models.Ptr(4.0)},
+		{CompanyID: first.ID, PeriodEnd: quarterEnd.AddDate(0, 0, 2), Source: "yahoo", Currency: "USD", Revenue: models.Ptr(150.0), DilutedEPS: models.Ptr(4.0)},
+	} {
+		if err = s.UpsertFinancial(ctx, f); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fs, err = s.Financials(ctx, first.ID)
+	if err != nil || len(fs) != 2 {
+		t.Fatal("duplicate source period shown twice", fs, err)
+	}
+	var rawCount int
+	if err = s.db.QueryRow(ctx, "SELECT count(*) FROM quarterly_financials WHERE company_id=$1", first.ID).Scan(&rawCount); err != nil || rawCount != 3 {
+		t.Fatal("raw observations lost", rawCount, err)
 	}
 	pool.Close()
 	if err = goose.DownToContext(ctx, db, ".", 0); err != nil {

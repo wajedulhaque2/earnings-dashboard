@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const Methodology = "us-sessions-v1-fractional-close"
+const Methodology = "us-sessions-v2-daily-opening-gap"
 
 var Horizons = []int{1, 2, 5, 10, 21, 63}
 
@@ -48,6 +48,7 @@ func Calculate(e models.Event, prices []models.Price, snapshots []models.Snapsho
 	if event.Format("2006-01-02") < localNow.Format("2006-01-02") {
 		r.EventOpen = day.Open
 		r.EventClose = day.Close
+		r.Returns[0] = Return(day.Open, prev.Close)
 		r.Returns[1] = Return(day.Close, prev.Close)
 	}
 	var selected *models.Snapshot
@@ -72,7 +73,7 @@ func Calculate(e models.Event, prices []models.Price, snapshots []models.Snapsho
 	}
 	if selected != nil && !laterSplit {
 		r.PremarketPrice = models.Ptr(selected.Price)
-		r.Returns[0] = Return(r.PremarketPrice, prev.Close)
+		r.PremarketReturn = Return(r.PremarketPrice, prev.Close)
 	}
 	for i, h := range Horizons {
 		date, ok := earnings.Shift(event, h)
@@ -171,9 +172,9 @@ func GapBucket(v *float64) int {
 }
 
 type Group struct {
-	Name                             string
-	Events                           int
-	Event, Week, Month, Continuation Stats
+	Name                                      string
+	Events                                    int
+	Opening, Event, Week, Month, Continuation Stats
 }
 
 func Groups(rows []models.History, gap bool) []Group {

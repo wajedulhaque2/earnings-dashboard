@@ -28,14 +28,10 @@ func Recalculate(ctx context.Context, store ReactionStore, symbol string, now ti
 	if err != nil {
 		return err
 	}
-	snapshots, err := store.Snapshots(ctx, c.ID)
-	if err != nil {
-		return err
-	}
 	for _, e := range events {
 		r := models.Reaction{EventID: e.ID, Methodology: analytics.Methodology}
 		if c.Timezone != nil && *c.Timezone == "America/New_York" {
-			r = analytics.Calculate(e, prices, snapshots, now)
+			r = analytics.Calculate(e, prices, nil, now)
 		}
 		if err = store.UpsertReaction(ctx, r); err != nil {
 			return err

@@ -1,3 +1,9 @@
+# Current strategy update
+
+The September 2026 universe/Opening Gap implementation supersedes the earlier premarket and four-way-condition descriptions below. See [current policy](UNIVERSE.md) and the persisted reports in [audits](audits/). Validation results for the new work will be recorded with its final coverage report; older counts below describe earlier runs.
+
+---
+
 # Implementation and verification status
 
 Update: the later [SEC/status audit](SEC_STATUS_AUDIT.md) verified Docker build/application restart and live SEC ingestion for LEN, NVDA, META, MU and AAPL. The initial verification limitations below describe the earlier implementation checkpoint.

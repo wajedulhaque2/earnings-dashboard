@@ -4,7 +4,7 @@ package scheduler
 
 import (
 	"context"
-	"earnings-dashboard/internal/earnings"
+
 	"earnings-dashboard/internal/service"
 	"errors"
 	"log/slog"
@@ -34,6 +34,21 @@ type Scheduler struct {
 
 func (s *Scheduler) Cycle(ctx context.Context) error {
 	var failures []error
+	if store, ok := s.Store.(interface {
+		UniverseDue(context.Context) (bool, error)
+	}); ok {
+		due, e := store.UniverseDue(ctx)
+		if e != nil {
+			return e
+		}
+		if due {
+			if syncer, ok := s.Sync.(interface{ SyncUniverse(context.Context) error }); ok {
+				if e = syncer.SyncUniverse(ctx); e != nil {
+					failures = append(failures, e)
+				}
+			}
+		}
+	}
 	due, err := s.Store.CalendarDue(ctx)
 	if err != nil {
 		return err
@@ -74,26 +89,6 @@ func (s *Scheduler) Cycle(ctx context.Context) error {
 		}
 		if e := s.Store.FinishRequest(ctx, symbol, err == nil); e != nil {
 			failures = append(failures, e)
-		}
-	}
-	// Fetch after the premarket window so the 09:29 minute bar has completed.
-	now := time.Now().In(s.Location)
-	if earnings.IsSession(now) && now.Hour()*60+now.Minute() >= 570 && now.Hour() <= 20 {
-		symbols, e := s.Store.IntradaySymbols(ctx)
-		if e != nil {
-			failures = append(failures, e)
-		} else {
-			for _, symbol := range symbols {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				if e = s.Sync.SyncRecentIntraday(ctx, symbol); e != nil {
-					failures = append(failures, e)
-				}
-				if e = service.Recalculate(ctx, s.Store, symbol, time.Now()); e != nil {
-					failures = append(failures, e)
-				}
-			}
 		}
 	}
 	return errors.Join(failures...)

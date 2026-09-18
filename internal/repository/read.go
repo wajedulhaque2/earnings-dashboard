@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-const companyColumns = `id,symbol,name,exchange,country,sector,industry,description,logo_url,currency,timezone,cik,market_cap,latest_price,quote_time,updated_at`
+const companyColumns = `id,symbol,name,exchange,country,sector,industry,description,logo_url,currency,timezone,cik,market_cap,latest_price,quote_time,updated_at,security_type,exchange_code,universe_eligible,universe_reason,universe_checked_at,fiscal_year_end`
 
 func scanCompany(row pgx.Row) (models.Company, error) {
 	var c models.Company
-	err := row.Scan(&c.ID, &c.Symbol, &c.Name, &c.Exchange, &c.Country, &c.Sector, &c.Industry, &c.Description, &c.LogoURL, &c.Currency, &c.Timezone, &c.CIK, &c.MarketCap, &c.LatestPrice, &c.QuoteTime, &c.UpdatedAt)
+	err := row.Scan(&c.ID, &c.Symbol, &c.Name, &c.Exchange, &c.Country, &c.Sector, &c.Industry, &c.Description, &c.LogoURL, &c.Currency, &c.Timezone, &c.CIK, &c.MarketCap, &c.LatestPrice, &c.QuoteTime, &c.UpdatedAt, &c.SecurityType, &c.ExchangeCode, &c.UniverseEligible, &c.UniverseReason, &c.UniverseCheckedAt, &c.FiscalYearEnd)
 	return c, err
 }
 func (s *Store) Company(ctx context.Context, symbol string) (models.Company, error) {
@@ -87,7 +87,7 @@ type CalendarFilter struct {
 
 func (s *Store) Calendar(ctx context.Context, f CalendarFilter) ([]models.CalendarItem, error) {
 	rows, err := s.db.Query(ctx, `SELECT `+eventColumns+` FROM earnings_events e JOIN companies c ON c.id=e.company_id
- WHERE e.report_date >= $1 AND e.report_date < $2 AND ($3='' OR e.session=$3) AND ($4='' OR c.sector=$4)
+ WHERE c.universe_eligible AND e.report_date >= $1 AND e.report_date < $2 AND ($3='' OR e.session=$3) AND ($4='' OR c.sector=$4)
  AND ($5='' OR strpos(lower(c.symbol),lower($5))>0 OR strpos(lower(COALESCE(c.name,'')),lower($5))>0)
  AND ($6::numeric=0 OR (c.currency='USD' AND c.market_cap>$6))
  AND (NOT $7 OR EXISTS(SELECT 1 FROM watchlist_companies wc JOIN watchlists w ON w.id=wc.watchlist_id WHERE wc.company_id=c.id AND w.name='Default'))
@@ -120,7 +120,7 @@ func (s *Store) Calendar(ctx context.Context, f CalendarFilter) ([]models.Calend
 	return out, nil
 }
 func (s *Store) Financials(ctx context.Context, id int64) ([]models.Financial, error) {
-	rows, err := s.db.Query(ctx, `SELECT company_id,fiscal_year,fiscal_quarter,period_end,revenue,diluted_eps,source,COALESCE(currency,''),revenue_source,eps_source FROM quarterly_financials WHERE company_id=$1 ORDER BY period_end DESC LIMIT 12`, id)
+	rows, err := s.db.Query(ctx, `SELECT company_id,fiscal_year,fiscal_quarter,period_end,revenue,diluted_eps,source,COALESCE(currency,''),revenue_source,eps_source FROM canonical_quarterly_financials WHERE company_id=$1 ORDER BY period_end DESC LIMIT 12`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (s *Store) Snapshots(ctx context.Context, id int64) ([]models.Snapshot, err
 	return out, rows.Err()
 }
 func (s *Store) Reactions(ctx context.Context, id int64) (map[int64]models.Reaction, error) {
-	rows, err := s.db.Query(ctx, `SELECT r.earnings_event_id,r.previous_close,r.premarket_price,r.event_open,r.event_close,r.premarket_return_pct,r.event_day_return_pct,r.return_1d,r.return_2d,r.return_1w,r.return_2w,r.return_1m,r.return_3m,r.methodology_version,r.event_date FROM earnings_reactions r JOIN earnings_events e ON e.id=r.earnings_event_id WHERE e.company_id=$1`, id)
+	rows, err := s.db.Query(ctx, `SELECT r.earnings_event_id,r.previous_close,r.premarket_price,r.event_open,r.event_close,r.opening_gap_pct,r.event_day_return_pct,r.return_1d,r.return_2d,r.return_1w,r.return_2w,r.return_1m,r.return_3m,r.methodology_version,r.event_date FROM earnings_reactions r JOIN earnings_events e ON e.id=r.earnings_event_id WHERE e.company_id=$1`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -211,8 +211,14 @@ func (s *Store) SetWatchlist(ctx context.Context, symbol string, add bool) error
 	}
 	return err
 }
-func (s *Store) SyncStates(ctx context.Context) ([]models.SyncState, error) {
-	rows, err := s.db.Query(ctx, `SELECT provider,split_part(resource,':',1),split_part(resource,':',2),latest_attempt_at,latest_attempt_status,last_success_at,latest_error_category FROM provider_sync_state ORDER BY latest_attempt_at DESC NULLS LAST,provider,resource LIMIT 500`)
+func (s *Store) SyncStates(ctx context.Context, filters ...string) ([]models.SyncState, error) {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
+	}
+	rows, err := s.db.Query(ctx, `SELECT provider,split_part(resource,':',1),split_part(resource,':',2),latest_attempt_at,latest_attempt_status,last_success_at,latest_error_category FROM provider_sync_state p LEFT JOIN companies c ON c.symbol=split_part(p.resource,':',2)
+ WHERE CASE $1::text WHEN 'all' THEN true WHEN 'errors' THEN latest_attempt_status='error' WHEN 'unsupported' THEN latest_attempt_status='unsupported' WHEN 'universe' THEN COALESCE(c.universe_eligible,false) ELSE latest_attempt_status='error' OR (latest_attempt_status<>'unsupported' AND (COALESCE(c.universe_eligible,false) OR split_part(p.resource,':',2)='') AND latest_attempt_at>now()-interval '7 days') END
+ ORDER BY CASE WHEN $1='' AND latest_attempt_status='error' THEN 0 ELSE 1 END,latest_attempt_at DESC NULLS LAST,provider,resource LIMIT 500`, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +242,7 @@ func (s *Store) Queue(ctx context.Context, symbol string) error {
 	return err
 }
 func (s *Store) Requests(ctx context.Context) ([]string, error) {
-	rows, err := s.db.Query(ctx, `SELECT symbol FROM sync_requests WHERE next_attempt <= now() AND attempts<5 ORDER BY requested_at LIMIT 20`)
+	rows, err := s.db.Query(ctx, `SELECT symbol FROM sync_requests WHERE next_attempt <= now() AND attempts<5 ORDER BY EXISTS(SELECT 1 FROM companies c JOIN earnings_events e ON e.company_id=c.id WHERE c.symbol=sync_requests.symbol AND c.universe_eligible AND e.report_date BETWEEN (now() AT TIME ZONE 'America/New_York')::date-7 AND (now() AT TIME ZONE 'America/New_York')::date+14) DESC, requested_at LIMIT 20`)
 	if err != nil {
 		return nil, err
 	}

@@ -1,3 +1,9 @@
+# September 2026 strategy amendment
+
+The current production strategy supersedes earlier broad-universe and premarket requirements below. Track approximately 750–1000 attribute-qualified US-listed operating equities; persist eligibility and exclusion reasons. The default calendar and background ingestion are restricted to eligible companies, with current/next earnings first. Arbitrary-symbol search remains available and identifies outside-universe results. Opening Gap from daily OHLC replaces historical premarket as the core metric. EPS-only beat/miss and large-surprise groups replace the primary EPS/revenue matrix. Preserve optional intraday and revenue data, hide empty analytical grids, and maintain a repeatable audit of at least 50 representative companies. See [exact policy](UNIVERSE.md).
+
+---
+
 # Earnings Dashboard — Product Specification
 
 ## Goal

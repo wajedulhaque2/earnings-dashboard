@@ -8,8 +8,8 @@ A Go/PostgreSQL application for personal earnings research with **£0 paid API s
 - Arbitrary-symbol/company search: PostgreSQL first, optional explicit free-provider lookup, and queued ingestion.
 - Company analysis with description, exchange, sector, industry, quote timestamp, market cap and next earnings.
 - Quarterly revenue and diluted EPS charts, accessible source tables, historical surprise/reaction heatmap, and toggleable reaction chart.
-- Premarket, event-day and 1/2/5/10/21/63 trading-session returns; per-horizon sample counts, average, median, win rate, best, worst and sample standard deviation.
-- Four EPS/revenue beat/miss groups and five premarket-gap groups, excluding unavailable observations.
+- Daily-OHLC Opening Gap, event-day and 1/2/5/10/21/63 trading-session returns; per-horizon sample counts, average, median, win rate, best, worst and sample standard deviation.
+- EPS Surprise Behaviour (beat, miss, large beat/miss) and five Opening Gap Behaviour buckets; no revenue-consensus dependency.
 - Persistent default watchlist, background refresh queue, scheduled ingestion, provider status and graceful empty/error states.
 - Embedded HTML/CSS and local ECharts assets; no frontend generation/build tool is needed.
 
@@ -25,7 +25,7 @@ docker compose ps
 docker compose logs migrate app worker
 ```
 
-Open [the calendar](http://localhost:8080/calendar). Compose starts PostgreSQL 17, runs migrations, starts the web server and starts the scheduler. The first calendar refresh happens automatically; company enrichment is gradual. No provider key is required. Ports bind only to localhost. Database credentials in Compose are development defaults.
+Open [the calendar](http://localhost:8080/calendar). Compose starts PostgreSQL 17, runs migrations, starts the web server and starts the scheduler. The scheduler constructs an attribute-based universe first, then refreshes the calendar and prioritizes current/next earnings companies. No provider key is required. Ports bind only to localhost. Database credentials in Compose are development defaults.
 
 ```sh
 docker compose run --rm worker /app/worker sync-calendar
@@ -52,6 +52,7 @@ go run ./cmd/server
 In another terminal:
 
 ```sh
+go run ./cmd/worker sync-universe
 go run ./cmd/worker sync-calendar
 go run ./cmd/worker sync-all NVDA
 go run ./cmd/worker schedule
@@ -88,6 +89,7 @@ go run ./cmd/worker sync-financials NVDA
 go run ./cmd/worker sync-earnings NVDA
 go run ./cmd/worker sync-prices NVDA
 go run ./cmd/worker sync-intraday NVDA
+go run ./cmd/worker sync-universe
 go run ./cmd/worker sync-calendar
 go run ./cmd/worker sync-all NVDA
 go run ./cmd/worker recalculate NVDA
@@ -115,7 +117,7 @@ done
 
 ## Scheduling and operations
 
-Run one `schedule` process. It holds a PostgreSQL advisory lock, works sequentially, and pauses one minute between bounded cycles. Calendar attempts are six hours apart. Company/result/price/fundamental refresh has a 24-hour cooldown, processes up to three due symbols per cycle and prioritizes watched companies. Manual refresh requests are persisted and retried at most five times with at least fifteen minutes between failures. Recent event intraday capture has an hourly cooldown, up to twenty symbols per cycle, on trading days after 09:30 through 20:59 New York time. This stores observations for future historical research; it is not a streaming quote service.
+Run one `schedule` process. It holds a PostgreSQL advisory lock, works sequentially, and pauses one minute between bounded cycles. Calendar attempts are six hours apart. Company/result/price/fundamental refresh has a 24-hour cooldown, processes up to three due symbols per cycle and prioritizes current/next earnings, then watched companies. Manual refresh requests are persisted and retried at most five times with at least fifteen minutes between failures. Current-calendar ingestion automatically queues eligible companies. Intraday capture is optional through the explicit sync-intraday command; core refreshes and Opening Gap do not depend on it.
 
 Use `/status` for provider/resource success and attempt times and `/health` for database/schema readiness. Health returns 200 when ready and 503 otherwise, without connection details. The web server can start during a database outage. Provider failures do not remove previously stored observations. Logs are structured JSON with safe error categories; credentials, cookies and response bodies are excluded.
 
@@ -163,3 +165,7 @@ V1 has no authentication and should remain private. Before internet-facing deplo
 ## Provider status audit
 
 See [SEC eligibility and status audit](docs/SEC_STATUS_AUDIT.md) for migration 00005, live SEC verification, status meanings and upgrade commands. Unsupported SEC symbols do not count as refresh failures. Last successful refresh is retained separately from the latest attempt.
+
+## Universe and repeatable coverage audit
+
+See [universe policy and audit](docs/UNIVERSE.md). Run `go run ./cmd/audit -refresh -sample docs/audits/sample.json -out docs/audits/after.json` to refresh and measure the same frozen sample. Omit `-refresh` for a database-only report. Reports contain actual per-company counts and company-level coverage; one observation does not mean complete history.

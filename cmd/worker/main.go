@@ -79,6 +79,8 @@ func run(logger *slog.Logger) bool {
 		}()
 		job := scheduler.Scheduler{Store: store, Sync: syncer, Logger: logger, Location: cfg.MarketLocation}
 		err = job.Run(root)
+	case "sync-universe":
+		err = syncer.SyncUniverse(ctx)
 	case "sync-company":
 		err = syncer.SyncCompany(ctx, symbol)
 	case "sync-financials":

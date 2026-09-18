@@ -34,7 +34,7 @@ func TestAllHorizonsAndPremarket(t *testing.T) {
 	loc, _ := time.LoadLocation("America/New_York")
 	snap := []models.Snapshot{{Time: time.Date(2026, 3, 9, 9, 29, 0, 0, loc), Session: "PRE", Price: 105, Source: "yahoo"}, {Time: time.Date(2026, 3, 9, 9, 30, 0, 0, loc), Session: "REGULAR", Price: 999}}
 	r := Calculate(models.Event{ReportDate: d, Session: "BMO"}, prices, snap, date("2027-01-01"))
-	if math.Abs(*r.Returns[0]-.05) > 1e-9 {
+	if math.Abs(*r.PremarketReturn-.05) > 1e-9 {
 		t.Fatal(r)
 	}
 	for i := range Horizons {
@@ -97,12 +97,12 @@ func TestCurrentSessionAndLaterSplit(t *testing.T) {
 	prices := []models.Price{{Date: date("2026-03-06"), Close: models.Ptr(100.0)}, {Date: d, Close: models.Ptr(110.0)}}
 	snapshots := []models.Snapshot{{Time: time.Date(2026, 3, 9, 9, 29, 0, 0, loc), Session: "PRE", Price: 105}}
 	r := Calculate(e, prices, snapshots, time.Date(2026, 3, 9, 17, 0, 0, 0, loc))
-	if r.Returns[1] != nil || r.Returns[0] == nil {
+	if r.Returns[1] != nil || r.PremarketReturn == nil {
 		t.Fatal("current daily bar must not be treated as final")
 	}
 	prices = append(prices, models.Price{Date: date("2026-03-10"), SplitRatio: models.Ptr(2.0)})
 	r = Calculate(e, prices, snapshots, date("2026-03-15"))
-	if r.Returns[0] != nil || r.Returns[1] == nil {
+	if r.PremarketReturn != nil || r.Returns[1] == nil {
 		t.Fatal("later split must exclude incompatible raw premarket observation")
 	}
 }

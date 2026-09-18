@@ -32,7 +32,9 @@ func (f pageFixture) Reactions(context.Context, int64) (map[int64]models.Reactio
 }
 func (f pageFixture) Search(context.Context, string) ([]models.Company, error) { return nil, f.err }
 func (f pageFixture) Watchlist(context.Context) ([]models.Company, error)      { return nil, f.err }
-func (f pageFixture) SyncStates(context.Context) ([]models.SyncState, error)   { return nil, f.err }
+func (f pageFixture) SyncStates(context.Context, ...string) ([]models.SyncState, error) {
+	return nil, f.err
+}
 func TestApplicationPages(t *testing.T) {
 	r := NewRouter(readinessFunc(func(context.Context) error { return nil }), time.Second, slog.Default(), &App{Store: pageFixture{}})
 	for _, path := range []string{"/calendar", "/stocks/TEST", "/search?q=TEST", "/watchlist", "/status"} {

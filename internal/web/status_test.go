@@ -12,7 +12,7 @@ import (
 
 type statusFixture struct{ pageFixture }
 
-func (statusFixture) SyncStates(context.Context) ([]models.SyncState, error) {
+func (statusFixture) SyncStates(context.Context, ...string) ([]models.SyncState, error) {
 	first := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
 	latest := first.Add(24 * time.Hour)
 	return []models.SyncState{{Provider: "sec", Operation: "financials", Symbol: "NVDA", LatestAttemptAt: &latest, LatestAttemptStatus: "error", LastSuccessAt: &first, LatestErrorCategory: models.Text("access_denied")}, {Provider: "sec", Operation: "filings", Symbol: "UNMAPPED", LatestAttemptAt: &latest, LatestAttemptStatus: "unsupported"}, {Provider: "sec", Operation: "financials", Symbol: "TEST", LatestAttemptStatus: "not_attempted"}}, nil
