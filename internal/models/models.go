@@ -39,6 +39,8 @@ type Company struct {
 	UpdatedAt                                                                                time.Time
 }
 type Event struct {
+	FiscalLabelSource, FiscalMappingReason                              *string
+	RevenueActualSource, RevenueEstimateSource                          *string
 	ID, CompanyID                                                       int64
 	Symbol                                                              string
 	ReportDate                                                          time.Time
@@ -48,6 +50,24 @@ type Event struct {
 	Session, Source                                                     string
 	EPSEstimate, EPSActual, EPSSurprise, EPSSurprisePct                 *float64
 	RevenueEstimate, RevenueActual, RevenueSurprise, RevenueSurprisePct *float64
+}
+
+// FiscalPeriod retains SEC filing context, separately from quarterly amounts.
+// An annual period is evidence for a label, never a quarterly revenue value.
+type FiscalPeriod struct {
+	CompanyID                 int64
+	PeriodEnd, Filed          time.Time
+	FiscalYear, FiscalQuarter int
+	Source, Accession, Form   string
+	Ambiguous                 bool
+}
+
+// RevenueConsensus is a closed reported quarter, cross-checked against the
+// provider's historical earnings record. It is not a current forecast snapshot.
+type RevenueConsensus struct {
+	Symbol, Source        string
+	PeriodEnd, ReportDate time.Time
+	Value                 float64
 }
 type Financial struct {
 	CompanyID                 int64

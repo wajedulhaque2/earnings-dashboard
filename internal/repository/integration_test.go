@@ -5,6 +5,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"earnings-dashboard/internal/earnings"
 	"earnings-dashboard/internal/models"
 	"earnings-dashboard/migrations"
 	"fmt"
@@ -268,11 +269,141 @@ func TestPostgresUpsertsAndMigrations(t *testing.T) {
 	if err = s.db.QueryRow(ctx, "SELECT count(*) FROM quarterly_financials WHERE company_id=$1", first.ID).Scan(&rawCount); err != nil || rawCount != 3 {
 		t.Fatal("raw observations lost", rawCount, err)
 	}
+	testFiscalEnrichment(t, s)
+	testRevenueQuota(t, s)
 	pool.Close()
 	if err = goose.DownToContext(ctx, db, ".", 0); err != nil {
 		t.Fatal(err)
 	}
 	if err = goose.UpContext(ctx, db, "."); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func testRevenueQuota(t *testing.T, s *Store) {
+	t.Helper()
+	ctx := context.Background()
+	for i := 0; i < 24; i++ {
+		// Move only the spacing timestamp; keep all reservations in the real
+		// rolling window so the daily limit is exercised without sleeping.
+		if _, err := s.db.Exec(ctx, `UPDATE revenue_provider_budget SET last_request=now()-interval '14 seconds'`); err != nil {
+			t.Fatal(err)
+		}
+		ok, err := s.ReserveRevenueRequest(ctx)
+		if err != nil || !ok {
+			t.Fatal(i, ok, err)
+		}
+		ok, err = s.ReserveRevenueRequest(ctx)
+		if err != nil || ok {
+			t.Fatal("minimum spacing not enforced", err)
+		}
+	}
+	s.db.Exec(ctx, `UPDATE revenue_provider_budget SET last_request=now()-interval '14 seconds'`)
+	ok, err := s.ReserveRevenueRequest(ctx)
+	if err != nil || ok {
+		t.Fatal("rolling quota exceeded", err)
+	}
+	if err = s.SaveRevenueCache(ctx, "TEST", "EARNINGS", []byte(`{"symbol":"TEST","quarterlyEarnings":[]}`)); err != nil {
+		t.Fatal(err)
+	}
+	b, err := s.RevenueCache(ctx, "TEST", "EARNINGS")
+	if err != nil || len(b) == 0 {
+		t.Fatal("cache not persisted", err)
+	}
+	s.db.Exec(ctx, `UPDATE revenue_provider_cache SET fetched_at=now()-interval '8 days'`)
+	b, err = s.RevenueCache(ctx, "TEST", "EARNINGS")
+	if err != nil || len(b) != 0 {
+		t.Fatal("expired cache reused", err)
+	}
+}
+
+func testFiscalEnrichment(t *testing.T, s *Store) {
+	t.Helper()
+	ctx := context.Background()
+	c, err := s.UpsertCompany(ctx, models.Company{Symbol: "FISCAL", Country: models.Text("United States"), Currency: models.Text("USD")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	end := time.Date(2025, 4, 27, 0, 0, 0, 0, time.UTC)
+	date := end.AddDate(0, 0, 30)
+	e := models.Event{CompanyID: c.ID, Symbol: c.Symbol, ReportDate: date, Source: "yahoo"}
+	if err = s.UpsertEvent(ctx, e); err != nil {
+		t.Fatal(err)
+	}
+	p := models.FiscalPeriod{CompanyID: c.ID, PeriodEnd: end, Filed: date.AddDate(0, 0, 2), FiscalYear: 2026, FiscalQuarter: 1, Accession: "fixture", Form: "10-Q", Source: "sec_explicit"}
+	if err = s.UpsertFiscalPeriod(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	f := models.Financial{CompanyID: c.ID, PeriodEnd: end, Revenue: models.Ptr(110.0), Source: "sec", Currency: "USD"}
+	if err = s.UpsertFinancial(ctx, f); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if err = s.LinkFiscalLabels(ctx, c.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	read := func() models.Event {
+		events, err := s.Events(ctx, c.ID)
+		if err != nil || len(events) != 1 {
+			t.Fatal(events, err)
+		}
+		return events[0]
+	}
+	e = read()
+	if e.FiscalYear == nil || *e.FiscalYear != 2026 || e.PeriodEnd == nil || !e.PeriodEnd.Equal(end) || e.RevenueActual == nil || *e.RevenueActual != 110 || e.RevenueActualSource == nil || *e.RevenueActualSource != "sec" {
+		t.Fatal("enrichment failed", e)
+	}
+	v := earnings.HistoricalRevenueEstimate{Symbol: c.Symbol, FiscalYear: 2026, FiscalQuarter: 1, PeriodEnd: end, ReportDate: date, ObservedAt: date.AddDate(0, 0, -1), Value: models.Ptr(100.0), Source: "yahoo", Currency: "USD", Historical: true}
+	forward := v
+	forward.Historical = false
+	if err = s.StoreHistoricalRevenueEstimate(ctx, e, forward); err == nil {
+		t.Fatal("forward consensus accepted")
+	}
+	if err = s.StoreHistoricalRevenueEstimate(ctx, e, v); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.LinkFiscalLabels(ctx, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	e = read()
+	if e.RevenueSurprisePct == nil || *e.RevenueSurprisePct != .1 || e.RevenueEstimateSource == nil || *e.RevenueEstimateSource != "yahoo" {
+		t.Fatal("fraction or independent provenance lost", e)
+	}
+	// A later Yahoo label/actual must not replace stronger SEC evidence.
+	if err = s.UpsertEvent(ctx, models.Event{CompanyID: c.ID, ReportDate: date, FiscalYear: models.Ptr(2025), FiscalQuarter: models.Ptr(2), Source: "yahoo"}); err != nil {
+		t.Fatal(err)
+	}
+	f.Source = "yahoo"
+	f.Revenue = models.Ptr(999.0)
+	if err = s.UpsertFinancial(ctx, f); err != nil {
+		t.Fatal(err)
+	}
+	v.Value = models.Ptr(200.0)
+	if err = s.StoreHistoricalRevenueEstimate(ctx, e, v); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if err = s.LinkFiscalLabels(ctx, c.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	e = read()
+	if *e.FiscalYear != 2026 || *e.FiscalQuarter != 1 || *e.RevenueActual != 110 || *e.RevenueEstimate != 100 || *e.RevenueSurprisePct != .1 {
+		t.Fatal("strong evidence overwritten", e)
+	}
+	// Simulate incomplete weaker period evidence on a subsequent refresh.
+	p.Source = "inferred_fiscal_sequence"
+	p.FiscalYear = 2025
+	p.FiscalQuarter = 2
+	if err = s.UpsertFiscalPeriod(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.LinkFiscalLabels(ctx, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	e = read()
+	if *e.FiscalYear != 2026 || *e.FiscalQuarter != 1 {
+		t.Fatal("weak mapping overwrote SEC", e)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"earnings-dashboard/internal/models"
 	"earnings-dashboard/internal/providers"
+	"earnings-dashboard/internal/providers/alphavantage"
 	"earnings-dashboard/internal/providers/httpclient"
 	"errors"
 	"github.com/jackc/pgx/v5"
@@ -28,6 +29,7 @@ type Sync struct {
 	Earnings     providers.Earnings
 	Market       providers.MarketData
 	Filings      providers.Filings
+	Revenue      providers.HistoricalRevenue
 	Logger       *slog.Logger
 }
 
@@ -38,6 +40,8 @@ func (s *Sync) operation(ctx context.Context, provider, operation, symbol string
 	category := ""
 	if errors.Is(err, providers.ErrUnsupported) {
 		status = "unsupported"
+	} else if errors.Is(err, alphavantage.ErrBudget) {
+		status, category = "not_attempted", "free_quota_exhausted"
 	} else if errors.Is(err, providers.ErrNotConfigured) {
 		status, category = "not_attempted", "not_configured"
 	} else if err != nil {
@@ -179,6 +183,22 @@ func (s *Sync) SyncFinancials(ctx context.Context, symbol string) error {
 			if e != nil {
 				return e
 			}
+			if source, ok := p.(providers.FiscalPeriods); ok {
+				if store, ok := s.Store.(interface {
+					UpsertFiscalPeriod(context.Context, models.FiscalPeriod) error
+				}); ok {
+					periods, e := source.FiscalPeriods(ctx, c.Symbol)
+					if e != nil {
+						return e
+					}
+					for _, period := range periods {
+						period.CompanyID = c.ID
+						if e = store.UpsertFiscalPeriod(ctx, period); e != nil {
+							return e
+						}
+					}
+				}
+			}
 			if len(rows) == 0 {
 				return providers.ErrUnavailable
 			}
@@ -218,7 +238,14 @@ func (s *Sync) SyncFinancials(ctx context.Context, symbol string) error {
 		if labels, ok := s.Store.(interface {
 			LinkFiscalLabels(context.Context, int64) error
 		}); ok {
-			return labels.LinkFiscalLabels(ctx, c.ID)
+			if err := labels.LinkFiscalLabels(ctx, c.ID); err != nil {
+				return err
+			}
+			// Optional consensus coverage cannot make a fundamentals cycle fail.
+			if s.Revenue != nil {
+				_ = s.SyncRevenueEstimates(ctx, c.Symbol)
+			}
+			return nil
 		}
 		return nil
 	}
@@ -240,8 +267,63 @@ func (s *Sync) SyncEarnings(ctx context.Context, symbol string) error {
 				return e
 			}
 		}
+		return s.backfill(ctx, c.ID)
+	})
+}
+
+func (s *Sync) backfill(ctx context.Context, id int64) error {
+	if store, ok := s.Store.(interface {
+		LinkFiscalLabels(context.Context, int64) error
+	}); ok {
+		return store.LinkFiscalLabels(ctx, id)
+	}
+	return nil
+}
+
+func (s *Sync) SyncFilings(ctx context.Context, symbol string) error {
+	c, err := s.company(ctx, symbol)
+	if err != nil {
+		return err
+	}
+	if s.Filings == nil {
+		return providers.ErrUnavailable
+	}
+	err = s.operation(ctx, "sec", "filings", c.Symbol, func() error {
+		if err := eligible(ctx, s.Filings, c.Symbol); err != nil {
+			return err
+		}
+		rows, err := s.Filings.Filings(ctx, c.Symbol)
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			row.CompanyID = c.ID
+			if err = s.Store.UpsertFiling(ctx, row); err != nil {
+				return err
+			}
+		}
+		if source, ok := s.Filings.(providers.FiscalPeriods); ok {
+			if store, ok := s.Store.(interface {
+				UpsertFiscalPeriod(context.Context, models.FiscalPeriod) error
+			}); ok {
+				periods, err := source.FiscalPeriods(ctx, c.Symbol)
+				if err != nil {
+					return err
+				}
+				for _, p := range periods {
+					p.CompanyID = c.ID
+					if err = store.UpsertFiscalPeriod(ctx, p); err != nil {
+						return err
+					}
+				}
+			}
+		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	return s.backfill(ctx, c.ID)
 }
 func (s *Sync) SyncHistoricalPrices(ctx context.Context, symbol string) error {
 	c, err := s.company(ctx, symbol)

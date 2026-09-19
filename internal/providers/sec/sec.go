@@ -24,6 +24,8 @@ type Client struct {
 	mu                sync.Mutex
 	tickers           map[string]ticker
 	loaded            time.Time
+	periodSymbol      string
+	periodRows        []models.FiscalPeriod
 }
 
 func New(agent string) *Client {
@@ -110,12 +112,14 @@ func (c *Client) Search(ctx context.Context, q string) ([]models.Company, error)
 	return out, nil
 }
 
+type filingList struct{ AccessionNumber, Form, FilingDate, ReportDate, PrimaryDocument []string }
 type submission struct {
 	FiscalYearEnd      string
 	Name               string
 	Tickers, Exchanges []string
 	Filings            struct {
-		Recent struct{ AccessionNumber, Form, FilingDate, ReportDate, PrimaryDocument []string }
+		Recent filingList
+		Files  []struct{ Name, FilingTo string }
 	}
 }
 
@@ -146,7 +150,7 @@ func (c *Client) Company(ctx context.Context, symbol string) (models.Company, er
 	return company, nil
 }
 func (c *Client) Filings(ctx context.Context, symbol string) ([]models.Filing, error) {
-	_, s, err := c.submission(ctx, symbol)
+	s, err := c.historicalSubmission(ctx, symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -188,9 +192,12 @@ func (c *Client) Financials(ctx context.Context, symbol string) ([]models.Financ
 	rows := extract(facts)
 	// FY/FP identify the filing's fiscal period, not every comparative fact in
 	// that filing. Only label a fact when its end matches that accession's report date.
-	_, submission, subErr := c.submission(ctx, symbol)
+	submission, subErr := c.historicalSubmission(ctx, symbol)
 	if subErr == nil {
 		labelPeriods(rows, facts, submission)
+		c.mu.Lock()
+		c.periodSymbol, c.periodRows = symbol, fiscalEvidence(facts, submission)
+		c.mu.Unlock()
 	}
 	return rows, nil
 }

@@ -1,0 +1,80 @@
+{
+  "captured_at": "2026-09-18T22:48:09.8802908Z",
+  "yahoo_symbols": [
+    "NVDA",
+    "ADBE",
+    "COST",
+    "ASML"
+  ],
+  "yahoo_modules": [
+    "earningsHistory",
+    "earnings",
+    "earningsTrend",
+    "calendarEvents",
+    "incomeStatementHistoryQuarterly"
+  ],
+  "yahoo_historical_revenue_consensus_observations": 0,
+  "visualization_field_results": [
+    {
+      "field": "field/consensusrevenue",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/epsestimate",
+      "result": "success"
+    },
+    {
+      "field": "field/revenueActual",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenueEstimate",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenueSurprise",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenueSurprisePercent",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenueactual",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenueconsensus",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenuedifference",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenueestimate",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenuesurprise",
+      "result": "provider HTTP 400"
+    },
+    {
+      "field": "field/revenuesurprisepct",
+      "result": "provider HTTP 400"
+    }
+  ],
+  "timeseries_returned_types": [
+    "quarterlyTotalRevenue"
+  ],
+  "alphavantage": {
+    "documentation": "https://www.alphavantage.co/documentation/#earnings-estimates",
+    "endpoints": [
+      "EARNINGS_ESTIMATES",
+      "EARNINGS"
+    ],
+    "free_key_verified": true,
+    "raw_provider_periods_preserved_in": "revenue_provider_cache",
+    "historical_acceptance": "Closed fiscal quarter, exact fiscal-end join between both endpoints, reported EPS present, EPS consensus agrees at cent precision, exact event report date and persisted fiscal period."
+  }
+}

@@ -54,11 +54,11 @@ func (s *Store) Symbols(ctx context.Context) ([]string, error) {
 	return out, rows.Err()
 }
 
-const eventColumns = `e.id,e.company_id,c.symbol,e.report_date,e.report_time,e.session,e.source,e.fiscal_year,e.fiscal_quarter,e.period_end,e.eps_estimate,e.eps_actual,e.eps_surprise,e.eps_surprise_pct,e.revenue_estimate,e.revenue_actual,e.revenue_surprise,e.revenue_surprise_pct`
+const eventColumns = `e.id,e.company_id,c.symbol,e.report_date,e.report_time,e.session,e.source,e.fiscal_year,e.fiscal_quarter,e.period_end,e.eps_estimate,e.eps_actual,e.eps_surprise,e.eps_surprise_pct,e.revenue_estimate,e.revenue_actual,e.revenue_surprise,e.revenue_surprise_pct,e.fiscal_label_source,e.fiscal_mapping_reason,e.revenue_actual_source,e.revenue_estimate_source`
 
 func scanEvent(row pgx.Row) (models.Event, error) {
 	var e models.Event
-	err := row.Scan(&e.ID, &e.CompanyID, &e.Symbol, &e.ReportDate, &e.ReportTime, &e.Session, &e.Source, &e.FiscalYear, &e.FiscalQuarter, &e.PeriodEnd, &e.EPSEstimate, &e.EPSActual, &e.EPSSurprise, &e.EPSSurprisePct, &e.RevenueEstimate, &e.RevenueActual, &e.RevenueSurprise, &e.RevenueSurprisePct)
+	err := row.Scan(&e.ID, &e.CompanyID, &e.Symbol, &e.ReportDate, &e.ReportTime, &e.Session, &e.Source, &e.FiscalYear, &e.FiscalQuarter, &e.PeriodEnd, &e.EPSEstimate, &e.EPSActual, &e.EPSSurprise, &e.EPSSurprisePct, &e.RevenueEstimate, &e.RevenueActual, &e.RevenueSurprise, &e.RevenueSurprisePct, &e.FiscalLabelSource, &e.FiscalMappingReason, &e.RevenueActualSource, &e.RevenueEstimateSource)
 	return e, err
 }
 func (s *Store) Events(ctx context.Context, id int64) ([]models.Event, error) {

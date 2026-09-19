@@ -488,5 +488,6 @@ func (c *Client) Financials(ctx context.Context, symbol string) ([]models.Financ
 	if len(out) == 0 {
 		return nil, providers.ErrUnavailable
 	}
+	c.labelFinancialPeriods(ctx, symbol, out)
 	return out, nil
 }

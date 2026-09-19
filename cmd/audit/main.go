@@ -7,9 +7,11 @@ import (
 	"earnings-dashboard/internal/config"
 	"earnings-dashboard/internal/database"
 	"earnings-dashboard/internal/models"
+	"earnings-dashboard/internal/providers/alphavantage"
 	"earnings-dashboard/internal/repository"
 	"earnings-dashboard/internal/service"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -29,6 +31,9 @@ func run() error {
 	output := flag.String("out", "docs/audits/coverage.json", "report path")
 	refresh := flag.Bool("refresh", false, "refresh every sample company before measuring")
 	financialsOnly := flag.Bool("refresh-financials", false, "refresh fundamentals for every sample company before measuring")
+	fiscalRevenue := flag.Bool("fiscal-revenue", false, "event-level fiscal/revenue audit; never recalculate reactions")
+	refreshRevenue := flag.Bool("refresh-revenue", false, "optional free consensus refresh, current/next reporting companies first")
+	asOf := flag.String("as-of", "", "exclusive earnings-date cutoff YYYY-MM-DD (defaults to current New York date)")
 	flag.Parse()
 	for _, path := range []string{*sample, *output} {
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -95,8 +100,35 @@ func run() error {
 		seen[symbol] = true
 	}
 	store := repository.New(db)
-	syncer := service.New(store, cfg.SECUserAgent, slog.Default())
+	syncer := service.New(store, cfg.SECUserAgent, slog.Default(), cfg.AlphaVantageAPIKey)
 	failures := []string{}
+	if *refreshRevenue {
+		rows, err := db.Query(ctx, `SELECT c.symbol FROM companies c WHERE c.universe_eligible AND c.symbol=ANY($1) ORDER BY COALESCE((SELECT min(abs(e.report_date-(now() AT TIME ZONE 'America/New_York')::date)) FROM earnings_events e WHERE e.company_id=c.id AND e.report_date>=(now() AT TIME ZONE 'America/New_York')::date-7),9999),c.symbol`, symbols)
+		if err != nil {
+			return err
+		}
+		priority := []string{}
+		for rows.Next() {
+			var symbol string
+			if err = rows.Scan(&symbol); err != nil {
+				rows.Close()
+				return err
+			}
+			priority = append(priority, symbol)
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		for _, symbol := range priority {
+			if err = syncer.SyncRevenueEstimates(ctx, symbol); errors.Is(err, alphavantage.ErrBudget) {
+				continue // cached companies later in the order remain usable
+			} else if err != nil {
+				failures = append(failures, symbol)
+			}
+		}
+	}
 	if *refresh || *financialsOnly {
 		for i, s := range symbols {
 			slog.Info("coverage refresh", "index", i+1, "total", len(symbols), "symbol", s)
@@ -109,8 +141,10 @@ func run() error {
 				failures = append(failures, s)
 				status = "error"
 			}
-			if e := service.Recalculate(ctx, store, s, time.Now()); e != nil {
-				return e
+			if !*fiscalRevenue {
+				if e := service.Recalculate(ctx, store, s, time.Now()); e != nil {
+					return e
+				}
 			}
 			if !*financialsOnly {
 				if e := store.RecordSync(ctx, "yahoo", "all:"+s, status); e != nil {
@@ -118,6 +152,9 @@ func run() error {
 				}
 			}
 		}
+	}
+	if *fiscalRevenue {
+		return auditFiscalRevenue(ctx, store, symbols, *output, *asOf, failures)
 	}
 	rows, err := db.Query(ctx, `SELECT c.symbol,COALESCE(c.sector,'Unknown'),c.market_cap,c.universe_eligible,c.fiscal_year_end,
  (c.name IS NOT NULL)::int,(c.market_cap IS NOT NULL)::int,(c.sector IS NOT NULL)::int,(c.industry IS NOT NULL)::int,(c.description IS NOT NULL)::int,

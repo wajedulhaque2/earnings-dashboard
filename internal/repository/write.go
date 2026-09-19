@@ -29,14 +29,21 @@ func (s *Store) UpsertCompany(ctx context.Context, c models.Company) (models.Com
 	return s.Company(ctx, sym)
 }
 func (s *Store) UpsertEvent(ctx context.Context, e models.Event) error {
+	// Calendar/EPS ingestion cannot establish historical revenue provenance.
+	// Revenue actuals come from filed quarterly records; consensus uses the
+	// separately validated StoreHistoricalRevenueEstimate path.
+	e.RevenueEstimate = nil
+	e.RevenueActual = nil
+	e.RevenueSurprise = nil
+	e.RevenueSurprisePct = nil
 	if e.Session == "" {
 		e.Session = "UNKNOWN"
 	}
 	_, err := s.db.Exec(ctx, `INSERT INTO earnings_events(company_id,report_date,report_time,session,fiscal_year,fiscal_quarter,period_end,eps_estimate,eps_actual,eps_surprise,eps_surprise_pct,revenue_estimate,revenue_actual,revenue_surprise,revenue_surprise_pct,source,fiscal_label_source)
  VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,CASE WHEN $5::integer IS NOT NULL THEN 'yahoo_event' END)
  ON CONFLICT(company_id,report_date) DO UPDATE SET
- fiscal_label_source=CASE WHEN EXCLUDED.fiscal_year IS NOT NULL THEN 'yahoo_event' ELSE earnings_events.fiscal_label_source END,report_time=COALESCE(EXCLUDED.report_time,earnings_events.report_time),session=CASE WHEN EXCLUDED.session='UNKNOWN' THEN earnings_events.session ELSE EXCLUDED.session END,
- fiscal_year=COALESCE(EXCLUDED.fiscal_year,earnings_events.fiscal_year),fiscal_quarter=COALESCE(EXCLUDED.fiscal_quarter,earnings_events.fiscal_quarter),period_end=COALESCE(EXCLUDED.period_end,earnings_events.period_end),
+ fiscal_label_source=CASE WHEN earnings_events.fiscal_label_source IN('sec_explicit','sec_annual_q4') THEN earnings_events.fiscal_label_source WHEN EXCLUDED.fiscal_year IS NOT NULL THEN 'yahoo_event' ELSE earnings_events.fiscal_label_source END,report_time=COALESCE(EXCLUDED.report_time,earnings_events.report_time),session=CASE WHEN EXCLUDED.session='UNKNOWN' THEN earnings_events.session ELSE EXCLUDED.session END,
+ fiscal_year=CASE WHEN earnings_events.fiscal_label_source IN('sec_explicit','sec_annual_q4') THEN earnings_events.fiscal_year ELSE COALESCE(EXCLUDED.fiscal_year,earnings_events.fiscal_year) END,fiscal_quarter=CASE WHEN earnings_events.fiscal_label_source IN('sec_explicit','sec_annual_q4') THEN earnings_events.fiscal_quarter ELSE COALESCE(EXCLUDED.fiscal_quarter,earnings_events.fiscal_quarter) END,period_end=COALESCE(earnings_events.period_end,EXCLUDED.period_end),
  eps_estimate=COALESCE(EXCLUDED.eps_estimate,earnings_events.eps_estimate),eps_actual=COALESCE(EXCLUDED.eps_actual,earnings_events.eps_actual),eps_surprise=COALESCE(EXCLUDED.eps_surprise,earnings_events.eps_surprise),eps_surprise_pct=COALESCE(EXCLUDED.eps_surprise_pct,earnings_events.eps_surprise_pct),
  revenue_estimate=COALESCE(EXCLUDED.revenue_estimate,earnings_events.revenue_estimate),revenue_actual=COALESCE(EXCLUDED.revenue_actual,earnings_events.revenue_actual),revenue_surprise=COALESCE(EXCLUDED.revenue_surprise,earnings_events.revenue_surprise),revenue_surprise_pct=COALESCE(EXCLUDED.revenue_surprise_pct,earnings_events.revenue_surprise_pct),source=EXCLUDED.source,updated_at=now()`, e.CompanyID, e.ReportDate, e.ReportTime, e.Session, e.FiscalYear, e.FiscalQuarter, e.PeriodEnd, e.EPSEstimate, e.EPSActual, e.EPSSurprise, e.EPSSurprisePct, e.RevenueEstimate, e.RevenueActual, e.RevenueSurprise, e.RevenueSurprisePct, e.Source)
 	return err

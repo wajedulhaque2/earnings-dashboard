@@ -1,0 +1,1183 @@
+{
+  "exclusive_report_date_cutoff": "2026-09-18",
+  "companies": [
+    {
+      "symbol": "ABVX",
+      "events": 5,
+      "quarter": 4,
+      "revenue_actual": 0,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 4
+        }
+      },
+      "missing_quarter_reasons": {
+        "insufficient_history": 1
+      }
+    },
+    {
+      "symbol": "ADBE",
+      "events": 41,
+      "quarter": 31,
+      "revenue_actual": 30,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 1,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 10
+      }
+    },
+    {
+      "symbol": "AIG",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 37,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 36,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "AMZN",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "APO",
+      "events": 40,
+      "quarter": 18,
+      "revenue_actual": 16,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 4,
+          "sec_explicit": 13,
+          "sec_same_day": 1
+        },
+        "revenue_actual": {
+          "sec": 15,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "insufficient_history": 3,
+        "no_matching_filing": 19
+      }
+    },
+    {
+      "symbol": "ASML",
+      "events": 40,
+      "quarter": 4,
+      "revenue_actual": 0,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 4
+        }
+      },
+      "missing_quarter_reasons": {
+        "foreign_issuer": 36
+      }
+    },
+    {
+      "symbol": "AVY",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "AWK",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 27,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 26,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "AXP",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 30,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 29,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "BNS",
+      "events": 40,
+      "quarter": 4,
+      "revenue_actual": 0,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 4
+        }
+      },
+      "missing_quarter_reasons": {
+        "foreign_issuer": 29,
+        "insufficient_history": 7
+      }
+    },
+    {
+      "symbol": "BSY",
+      "events": 24,
+      "quarter": 24,
+      "revenue_actual": 20,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "inferred_fiscal_sequence": 1,
+          "sec_annual_q4": 6,
+          "sec_explicit": 17
+        },
+        "revenue_actual": {
+          "sec": 19,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "C",
+      "events": 40,
+      "quarter": 28,
+      "revenue_actual": 28,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_explicit": 28
+        },
+        "revenue_actual": {
+          "sec": 28
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 12
+      }
+    },
+    {
+      "symbol": "CCL",
+      "events": 40,
+      "quarter": 38,
+      "revenue_actual": 30,
+      "revenue_estimate": 17,
+      "revenue_surprise": 14,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 8,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30
+        },
+        "revenue_estimate": {
+          "alphavantage": 17
+        },
+        "revenue_surprise": {
+          "alphavantage": 14
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 2
+      }
+    },
+    {
+      "symbol": "CFR",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 31,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "COST",
+      "events": 40,
+      "quarter": 39,
+      "revenue_actual": 31,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 9,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "insufficient_history": 1
+      }
+    },
+    {
+      "symbol": "CPNG",
+      "events": 22,
+      "quarter": 22,
+      "revenue_actual": 18,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 5,
+          "sec_explicit": 17
+        },
+        "revenue_actual": {
+          "sec": 17,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "CPRT",
+      "events": 41,
+      "quarter": 41,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 1,
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "CTAS",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 10,
+      "revenue_surprise": 6,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 2
+        },
+        "revenue_estimate": {
+          "alphavantage": 10
+        },
+        "revenue_surprise": {
+          "alphavantage": 6
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "CVX",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 31,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "CYTK",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 33,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 32,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "DELL",
+      "events": 31,
+      "quarter": 29,
+      "revenue_actual": 28,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "inferred_fiscal_sequence": 1,
+          "sec_annual_q4": 7,
+          "sec_explicit": 21
+        },
+        "revenue_actual": {
+          "sec": 27,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "insufficient_history": 2
+      }
+    },
+    {
+      "symbol": "DRI",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 35,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "FCFS",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "FDS",
+      "events": 40,
+      "quarter": 38,
+      "revenue_actual": 35,
+      "revenue_estimate": 18,
+      "revenue_surprise": 18,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 8,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35
+        },
+        "revenue_estimate": {
+          "alphavantage": 18
+        },
+        "revenue_surprise": {
+          "alphavantage": 18
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 2
+      }
+    },
+    {
+      "symbol": "FLS",
+      "events": 40,
+      "quarter": 38,
+      "revenue_actual": 37,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 8,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 36,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 2
+      }
+    },
+    {
+      "symbol": "FPS",
+      "events": 1,
+      "quarter": 1,
+      "revenue_actual": 1,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 1
+        },
+        "revenue_actual": {
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "GEV",
+      "events": 10,
+      "quarter": 10,
+      "revenue_actual": 9,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 2,
+          "sec_explicit": 8
+        },
+        "revenue_actual": {
+          "sec": 8,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "GIS",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 1,
+      "revenue_surprise": 1,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 36
+        },
+        "revenue_estimate": {
+          "alphavantage": 1
+        },
+        "revenue_surprise": {
+          "alphavantage": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "GKOS",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 37,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 36,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "GLW",
+      "events": 40,
+      "quarter": 38,
+      "revenue_actual": 30,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 28
+        },
+        "revenue_actual": {
+          "sec": 29,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 2
+      }
+    },
+    {
+      "symbol": "HD",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 34,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "JBL",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 31,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "JEF",
+      "events": 40,
+      "quarter": 39,
+      "revenue_actual": 31,
+      "revenue_estimate": 10,
+      "revenue_surprise": 9,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 9,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        },
+        "revenue_estimate": {
+          "alphavantage": 10
+        },
+        "revenue_surprise": {
+          "alphavantage": 9
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 1
+      }
+    },
+    {
+      "symbol": "KR",
+      "events": 40,
+      "quarter": 34,
+      "revenue_actual": 21,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 8,
+          "sec_explicit": 26
+        },
+        "revenue_actual": {
+          "sec": 21
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 6
+      }
+    },
+    {
+      "symbol": "LEN",
+      "events": 41,
+      "quarter": 34,
+      "revenue_actual": 33,
+      "revenue_estimate": 11,
+      "revenue_surprise": 11,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 1,
+          "sec_annual_q4": 3,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 33
+        },
+        "revenue_estimate": {
+          "alphavantage": 11
+        },
+        "revenue_surprise": {
+          "alphavantage": 11
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 7
+      }
+    },
+    {
+      "symbol": "LINE",
+      "events": 9,
+      "quarter": 9,
+      "revenue_actual": 8,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 2,
+          "sec_explicit": 7
+        },
+        "revenue_actual": {
+          "sec": 7,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "LTH",
+      "events": 19,
+      "quarter": 19,
+      "revenue_actual": 15,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 5,
+          "sec_explicit": 14
+        },
+        "revenue_actual": {
+          "sec": 14,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "MA",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 35,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "inferred_fiscal_sequence": 2,
+          "sec_annual_q4": 8,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "META",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 31,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "MRK",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 29,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 28,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "MU",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "MUSA",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 35,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "NFLX",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "NVDA",
+      "events": 40,
+      "quarter": 36,
+      "revenue_actual": 32,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 26
+        },
+        "revenue_actual": {
+          "sec": 31,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 4
+      }
+    },
+    {
+      "symbol": "ORCL",
+      "events": 40,
+      "quarter": 38,
+      "revenue_actual": 34,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 28
+        },
+        "revenue_actual": {
+          "sec": 33,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 2
+      }
+    },
+    {
+      "symbol": "PAYX",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 29,
+      "revenue_surprise": 26,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 2
+        },
+        "revenue_estimate": {
+          "alphavantage": 29
+        },
+        "revenue_surprise": {
+          "alphavantage": 26
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "PLTR",
+      "events": 24,
+      "quarter": 24,
+      "revenue_actual": 19,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 6,
+          "sec_explicit": 18
+        },
+        "revenue_actual": {
+          "sec": 18,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "PM",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "PODD",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 35,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "QCOM",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "RMBS",
+      "events": 40,
+      "quarter": 39,
+      "revenue_actual": 35,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 29
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "insufficient_history": 1
+      }
+    },
+    {
+      "symbol": "RRX",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 35,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "inferred_fiscal_sequence": 1,
+          "sec_annual_q4": 9,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 34,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "SBUX",
+      "events": 40,
+      "quarter": 40,
+      "revenue_actual": 36,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 35,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {}
+    },
+    {
+      "symbol": "TCOM",
+      "events": 40,
+      "quarter": 4,
+      "revenue_actual": 0,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "financial_period_match": 4
+        }
+      },
+      "missing_quarter_reasons": {
+        "foreign_issuer": 35,
+        "insufficient_history": 1
+      }
+    },
+    {
+      "symbol": "UNH",
+      "events": 40,
+      "quarter": 37,
+      "revenue_actual": 31,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 7,
+          "sec_explicit": 30
+        },
+        "revenue_actual": {
+          "sec": 30,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "no_matching_filing": 3
+      }
+    },
+    {
+      "symbol": "VMI",
+      "events": 40,
+      "quarter": 33,
+      "revenue_actual": 30,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 7,
+          "sec_explicit": 26
+        },
+        "revenue_actual": {
+          "sec": 29,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 7
+      }
+    },
+    {
+      "symbol": "WFC",
+      "events": 40,
+      "quarter": 29,
+      "revenue_actual": 15,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_explicit": 29
+        },
+        "revenue_actual": {
+          "sec": 11,
+          "yahoo": 4
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 1,
+        "no_matching_filing": 10
+      }
+    },
+    {
+      "symbol": "WMS",
+      "events": 41,
+      "quarter": 27,
+      "revenue_actual": 19,
+      "revenue_estimate": 0,
+      "revenue_surprise": 0,
+      "sources": {
+        "quarter": {
+          "sec_annual_q4": 10,
+          "sec_explicit": 17
+        },
+        "revenue_actual": {
+          "sec": 18,
+          "yahoo": 1
+        }
+      },
+      "missing_quarter_reasons": {
+        "ambiguous_period": 13,
+        "no_matching_filing": 1
+      }
+    }
+  ],
+  "totals": {
+    "events": 2109,
+    "quarter": 1889,
+    "revenue_actual": 1594,
+    "revenue_estimate": 96,
+    "revenue_surprise": 85
+  },
+  "refresh_failures": []
+}

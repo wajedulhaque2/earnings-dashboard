@@ -154,7 +154,7 @@ Make targets: `dev`, `worker`, `schedule`, `migrate`, `migrate-status`, `migrate
 - `00003_provenance.sql`: per-field financial source and split-event provenance.
 - `00004_refresh.sql`: persistent attempt timestamps and due-request index.
 
-No optional Massive or Alpha Vantage adapter is implemented; no paid fallback is invoked.
+Massive remains optional and unimplemented. Alpha Vantage's free `EARNINGS_ESTIMATES` and `EARNINGS` endpoints provide an optional historical revenue-consensus fallback. Set `ALPHA_VANTAGE_API_KEY` locally to enable it; no paid endpoint is called. The shared PostgreSQL budget allows at most 24 requests per rolling 24 hours (normally two per company). Requests are spaced 14 seconds apart, successful responses are cached for seven days, and recognized empty histories for one day. Workers prioritize current/next earnings using the existing tracked-universe policy. Normal page loads never request this provider.
 
 ## Deployment readiness
 
@@ -169,3 +169,17 @@ See [SEC eligibility and status audit](docs/SEC_STATUS_AUDIT.md) for migration 0
 ## Universe and repeatable coverage audit
 
 See [universe policy and audit](docs/UNIVERSE.md). Run `go run ./cmd/audit -refresh -sample docs/audits/sample.json -out docs/audits/after.json` to refresh and measure the same frozen sample. Omit `-refresh` for a database-only report. Reports contain actual per-company counts and company-level coverage; one observation does not mean complete history.
+
+## Historical quarter and revenue enrichment
+
+Migrations 00010–00011 retain SEC fiscal evidence, mapping/actual/estimate provenance, and the optional consensus cache/budget. Revenue surprise is now stored as a fraction; EPS surprise remains in percentage points. Existing revenue percentage-point values are converted by migration 00010.
+
+`sync-financials`, `sync-filings`, `sync-earnings`, and `sync-all` enrich persisted earnings events. `go run ./cmd/worker backfill-quarters SYMBOL` repeats fiscal/actual/surprise enrichment without any external requests. `go run ./cmd/worker sync-revenue-estimates SYMBOL` explicitly refreshes optional consensus for a tracked domestic issuer. Missing or ambiguous fiscal evidence and unavailable consensus remain NULL.
+
+Repeat the event-level audit with the frozen sample and cutoff:
+
+```sh
+go run ./cmd/audit -fiscal-revenue -sample docs/audits/fiscal-revenue-sample.json -as-of 2026-09-18 -out docs/audits/fiscal-revenue-after.json
+```
+
+Add `-refresh-financials` to fetch filed evidence, or `-refresh-revenue` to process consensus in nearest-earnings order until the free quota is unavailable. This fiscal audit mode does not recalculate reactions. See [the fiscal/revenue audit](docs/audits/FISCAL_REVENUE_REPORT.md) for the exact matching rules, measured coverage and limitations.

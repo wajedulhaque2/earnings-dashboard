@@ -47,7 +47,7 @@ func run(logger *slog.Logger) bool {
 		return false
 	}
 	store := repository.New(pool)
-	syncer := service.New(store, cfg.SECUserAgent, logger)
+	syncer := service.New(store, cfg.SECUserAgent, logger, cfg.AlphaVantageAPIKey)
 	command := "check"
 	if len(os.Args) > 1 {
 		command = os.Args[1]
@@ -85,6 +85,16 @@ func run(logger *slog.Logger) bool {
 		err = syncer.SyncCompany(ctx, symbol)
 	case "sync-financials":
 		err = syncer.SyncFinancials(ctx, symbol)
+	case "sync-filings":
+		err = syncer.SyncFilings(ctx, symbol)
+	case "sync-revenue-estimates":
+		err = syncer.SyncRevenueEstimates(ctx, symbol)
+	case "backfill-quarters":
+		company, e := store.Company(ctx, symbol)
+		err = e
+		if err == nil {
+			err = store.LinkFiscalLabels(ctx, company.ID)
+		}
 	case "sync-earnings":
 		err = syncer.SyncEarnings(ctx, symbol)
 	case "sync-prices":

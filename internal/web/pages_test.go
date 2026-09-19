@@ -5,6 +5,7 @@ import (
 	"earnings-dashboard/internal/models"
 	"earnings-dashboard/internal/repository"
 	"errors"
+	"html"
 	"log/slog"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,25 @@ import (
 type pageFixture struct {
 	PageStore
 	err error
+}
+type revenuePageFixture struct{ pageFixture }
+
+func (revenuePageFixture) Events(context.Context, int64) ([]models.Event, error) {
+	return []models.Event{{ID: 1, ReportDate: time.Date(2025, 5, 1, 0, 0, 0, 0, time.UTC), FiscalYear: models.Ptr(2025), FiscalQuarter: models.Ptr(1), RevenueSurprisePct: models.Ptr(.1), EPSSurprisePct: models.Ptr(2.5)}}, nil
+}
+func TestRevenueFractionAndHelpText(t *testing.T) {
+	r := NewRouter(readinessFunc(func(context.Context) error { return nil }), time.Second, slog.Default(), &App{Store: revenuePageFixture{}})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("GET", "/stocks/TEST", nil))
+	body := html.UnescapeString(w.Body.String())
+	for _, want := range []string{"+10.00%", "+2.50%", "2025 Q1", "Revenue surprise requires a historical analyst consensus estimate. Some older quarters are unavailable from free sources."} {
+		if !strings.Contains(body, want) {
+			t.Fatal("missing rendered value/help", want)
+		}
+	}
+	if quarter(models.Event{PeriodEnd: models.Ptr(time.Now())}) != "N/A" {
+		t.Fatal("period date presented as a known quarter")
+	}
 }
 
 func (f pageFixture) Company(context.Context, string) (models.Company, error) {

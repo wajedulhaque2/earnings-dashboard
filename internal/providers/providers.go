@@ -32,6 +32,13 @@ type Fundamentals interface {
 	Name() string
 	Financials(context.Context, string) ([]models.Financial, error)
 }
+type FiscalPeriods interface {
+	FiscalPeriods(context.Context, string) ([]models.FiscalPeriod, error)
+}
+type HistoricalRevenue interface {
+	Name() string
+	HistoricalRevenue(context.Context, string) ([]models.RevenueConsensus, error)
+}
 type MarketData interface {
 	Name() string
 	Prices(context.Context, string) ([]models.Price, error)

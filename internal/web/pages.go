@@ -119,9 +119,6 @@ func quarter(e models.Event) string {
 	if e.FiscalYear != nil && e.FiscalQuarter != nil {
 		return fmt.Sprintf("%d Q%d", *e.FiscalYear, *e.FiscalQuarter)
 	}
-	if e.PeriodEnd != nil {
-		return e.PeriodEnd.Format("2006-01-02")
-	}
 	return "N/A"
 }
 func (a *App) register(r chi.Router) {

@@ -21,7 +21,7 @@
     if(!items.length)return '';
     const h=history[items[0].dataIndex],e=h.Event;
     const fmt=v=>v==null?'N/A':v.toFixed(2)+'%';
-    return [e.ReportDate.slice(0,10),'Quarter: '+(e.FiscalYear&&e.FiscalQuarter?e.FiscalYear+' Q'+e.FiscalQuarter:'N/A'),'EPS surprise: '+fmt(e.EPSSurprisePct),'Revenue surprise: '+fmt(e.RevenueSurprisePct),...items.map(p=>p.seriesName+': '+fmt(p.value))].join('\n');
+    return [e.ReportDate.slice(0,10),'Quarter: '+(e.FiscalYear&&e.FiscalQuarter?e.FiscalYear+' Q'+e.FiscalQuarter:'N/A'),'EPS surprise: '+fmt(e.EPSSurprisePct),'Revenue surprise: '+fmt(e.RevenueSurprisePct == null ? null : e.RevenueSurprisePct * 100),...items.map(p=>p.seriesName+': '+fmt(p.value))].join('\n');
   }},series:[['Opening Gap',0],['Event day',1],['1W',4]].map(([name,index])=>({name,type:'line',connectNulls:false,data:history.map(h=>h.Reaction.Returns[index]==null?null:h.Reaction.Returns[index]*100)}))});
   window.addEventListener('resize',()=>charts.forEach(c=>c.resize()));
 })();

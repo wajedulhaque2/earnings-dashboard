@@ -10,13 +10,14 @@ import (
 )
 
 type Config struct {
-	Environment     string
-	Port            string
-	DatabaseURL     string
-	DatabaseTimeout time.Duration
-	ShutdownTimeout time.Duration
-	MarketLocation  *time.Location
-	SECUserAgent    string
+	Environment        string
+	Port               string
+	DatabaseURL        string
+	DatabaseTimeout    time.Duration
+	ShutdownTimeout    time.Duration
+	MarketLocation     *time.Location
+	SECUserAgent       string
+	AlphaVantageAPIKey string
 }
 
 func Load() (Config, error) { return load(os.LookupEnv) }
@@ -30,6 +31,7 @@ func load(lookup func(string) (string, bool)) (Config, error) {
 	}
 	c := Config{Environment: get("APP_ENV", "development"), Port: get("PORT", "8080"), DatabaseURL: get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/earnings_dashboard?sslmode=disable")}
 	c.SECUserAgent = get("SEC_USER_AGENT", "")
+	c.AlphaVantageAPIKey = get("ALPHA_VANTAGE_API_KEY", "")
 	if c.Environment != "development" && c.Environment != "test" && c.Environment != "production" {
 		return Config{}, fmt.Errorf("APP_ENV must be development, test, or production")
 	}
