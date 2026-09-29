@@ -2,6 +2,12 @@
 
 A Go/PostgreSQL application for personal earnings research with **£0 paid API subscriptions**. It uses direct Go clients for Yahoo Finance and SEC EDGAR. Missing financial observations stay SQL NULL and display as N/A. No Python, Node backend, paid provider dependency, or synthetic application seed data is required.
 
+## Application screenshot
+
+![Weekly earnings calendar with updated Earnings Dashboard wordmark](docs/screenshots/weekly-calendar.png)
+
+Captured from the local Docker app. Calendar coverage reflects the data available at capture time; missing reports remain explicitly marked.
+
 ## Features
 
 - Weekly calendar with BMO/AMC groups, explicit unknown timing, previous/current/next week navigation, company, sector, USD market-cap and watchlist filters.
